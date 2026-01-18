@@ -1,0 +1,380 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}首页 - 教师文档管理系统{% endblock %}
+
+{% block extra_css %}
+<style>
+.user-storage-item {
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef !important;
+}
+
+.user-storage-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+}
+
+.user-storage-item.frozen {
+    background-color: #f8f9fa !important;
+    border-color: #dee2e6 !important;
+}
+
+.user-storage-list {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 #f7fafc;
+}
+
+.user-storage-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.user-storage-list::-webkit-scrollbar-track {
+    background: #f7fafc;
+    border-radius: 3px;
+}
+
+.user-storage-list::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 3px;
+}
+
+.user-storage-list::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+}
+
+.progress {
+    border-radius: 3px;
+}
+
+.progress-bar {
+    border-radius: 3px;
+}
+
+.role-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.storage-stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+}
+
+.storage-stats-card .card-header {
+    background: rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i class="fas fa-home me-2"></i>
+            首页
+        </h2>
+    </div>
+</div>
+
+<!-- 统计卡片 -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ total_users }}</h4>
+                        <p class="card-text">总用户数</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ total_teachers }}</h4>
+                        <p class="card-text">教师用户</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-chalkboard-teacher fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ total_documents }}</h4>
+                        <p class="card-text">文档总数</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-file-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ pending_reviews }}</h4>
+                        <p class="card-text">待审核文档</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clipboard-check fa-2x"></i>
+                    </div>
+                </div>
+                {% if pending_reviews > 0 %}
+                <div class="mt-2">
+                    <a href="{% url 'documents:document_review_list' %}" class="btn btn-light btn-sm">
+                        <i class="fas fa-eye me-1"></i>立即审核
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- 用户存储使用情况 -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-hdd me-2"></i>
+                    用户存储使用情况
+                </h5>
+                <small class="text-muted">总体使用率: {{ overall_storage_stats.percentage }}%</small>
+            </div>
+            <div class="card-body">
+                {% if users_storage %}
+                    <div class="mb-3">
+                        <!-- 总体存储统计 -->
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">系统总存储</span>
+                            <span class="text-muted">{{ overall_storage_stats.total_quota|filesizeformat }}</span>
+                        </div>
+                        <div class="progress mb-3" style="height: 8px;">
+                            <div class="progress-bar {% if overall_storage_stats.percentage > 80 %}bg-danger{% elif overall_storage_stats.percentage > 60 %}bg-warning{% else %}bg-info{% endif %}" 
+                                 style="width: {{ overall_storage_stats.percentage }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- 用户存储详情 -->
+                    <div class="user-storage-list" style="max-height: 300px; overflow-y: auto;">
+                        {% for user in users_storage %}
+                        <div class="user-storage-item mb-3 p-2 border rounded {% if user.is_frozen %}frozen{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas {% if user.role == 'admin' %}fa-crown text-warning{% else %}fa-user text-primary{% endif %} me-2"></i>
+                                    <strong class="{% if user.is_frozen %}text-muted{% endif %}">
+                                        {{ user.get_full_name|default:user.username }}
+                                    </strong>
+                                    {% if user.is_frozen %}
+                                        <span class="badge bg-danger ms-2">已冻结</span>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">{{ user.role|title }}</small>
+                            </div>
+                            
+                            <div class="mb-2">
+                                <div class="d-flex justify-content-between small text-muted mb-1">
+                                    <span>使用率: {{ user.storage_used|filesizeformat }}/{{ user.storage_quota|filesizeformat }}</span>
+                                    <span>
+                                        {% if user.storage_percentage > 0 %}
+                                            {% if user.storage_percentage < 0.01 %}
+                                                0.01%
+                                            {% else %}
+                                                {{ user.storage_percentage|floatformat:2 }}%
+                                            {% endif %}
+                                        {% else %}
+                                            0%
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar {% if user.storage_percentage > 90 %}bg-danger{% elif user.storage_percentage > 70 %}bg-warning{% else %}bg-success{% endif %}" 
+                                         style="width: {% if user.storage_percentage > 0 %}{% if user.storage_percentage < 0.01 %}0.01{% else %}{{ user.storage_percentage }}{% endif %}{% else %}0{% endif %}%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="row text-center small">
+                                <div class="col-4">
+                                    <div class="text-muted">配额</div>
+                                    <div class="fw-bold">{{ user.storage_quota|filesizeformat }}</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-muted">已用</div>
+                                    <div class="fw-bold">{{ user.storage_used|filesizeformat }}</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-muted">剩余</div>
+                                    <div class="fw-bold">{{ user.storage_remaining|filesizeformat }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">暂无用户存储数据</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- 系统状态 -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    系统状态
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <i class="fas fa-user-slash fa-2x text-danger mb-2"></i>
+                            <h6>冻结用户</h6>
+                            <h4 class="text-danger">{{ frozen_users }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                            <h6>登录失败</h6>
+                            <h4 class="text-warning">{{ failed_logins }}</h4>
+                            <small class="text-muted">24小时内</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 最近活动 -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-users me-2"></i>
+                    最近注册用户
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_users %}
+                    <div class="list-group list-group-flush">
+                        {% for user in recent_users %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ user.get_full_name|default:user.username }}</strong>
+                                <br><small class="text-muted">{{ user.get_role_display }}</small>
+                            </div>
+                            <small class="text-muted">{{ user.date_joined|date:"m-d H:i" }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">暂无用户数据</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-sign-in-alt me-2"></i>
+                    最近登录记录
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_logins %}
+                    <div class="list-group list-group-flush">
+                        {% for login in recent_logins %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ login.user.get_full_name|default:login.user.username }}</strong>
+                                <br><small class="text-muted">{{ login.ip_address }}</small>
+                            </div>
+                            <small class="text-muted">{{ login.login_time|date:"m-d H:i" }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">暂无登录记录</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 快速操作 -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    快速操作
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <a href="{% url 'system:create_user' %}" class="btn btn-outline-primary w-100 mb-2">
+                            <i class="fas fa-user-plus me-1"></i>
+                            添加用户
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'system:user_list' %}" class="btn btn-outline-info w-100 mb-2">
+                            <i class="fas fa-users me-1"></i>
+                            用户管理
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'system:config' %}" class="btn btn-outline-warning w-100 mb-2">
+                            <i class="fas fa-cog me-1"></i>
+                            系统配置
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // 自动刷新数据
+    setInterval(function() {
+        // 这里可以添加AJAX请求来刷新统计数据
+    }, 30000); // 30秒刷新一次
+});
+</script>
+{% endblock %}

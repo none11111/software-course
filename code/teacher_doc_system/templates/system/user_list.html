@@ -1,0 +1,160 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}用户管理 - 教师文档管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fa fa-users"></i> 用户管理
+                    </h4>
+                    <a href="{% url 'system:create_user' %}" class="btn btn-primary">
+                        <i class="fa fa-plus"></i> 添加用户
+                    </a>
+                </div>
+                <div class="card-body">
+                    <!-- 搜索和筛选 -->
+                    <form method="get" class="mb-4">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" name="search" 
+                                       placeholder="搜索用户名、工号或姓名" value="{{ request.GET.search }}">
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" name="role">
+                                    <option value="">全部角色</option>
+                                    <option value="admin" {% if request.GET.role == 'admin' %}selected{% endif %}>管理员</option>
+                                    <option value="teacher" {% if request.GET.role == 'teacher' %}selected{% endif %}>教师</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" name="department">
+                                    <option value="">全部部门</option>
+                                    {% for dept in departments %}
+                                        <option value="{{ dept }}" {% if request.GET.department == dept %}selected{% endif %}>
+                                            {{ dept }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-outline-primary w-100">
+                                    <i class="fa fa-search"></i> 搜索
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- 用户列表 -->
+                    {% if object_list %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>用户名</th>
+                                        <th>工号</th>
+                                        <th>姓名</th>
+                                        <th>角色</th>
+                                        <th>部门</th>
+                                        <th>状态</th>
+                                        <th>注册时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in object_list %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ user.username }}</strong>
+                                                {% if user.is_superuser %}
+                                                    <span class="badge bg-danger ms-1">超级用户</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ user.employee_id }}</td>
+                                            <td>{{ user.get_full_name|default:"-" }}</td>
+                                            <td>
+                                                <span class="badge bg-{% if user.role == 'admin' %}danger{% else %}primary{% endif %}">
+                                                    {{ user.get_role_display }}
+                                                </span>
+                                            </td>
+                                            <td>{{ user.department|default:"-" }}</td>
+                                            <td>
+                                                {% if user.is_frozen %}
+                                                    <span class="badge bg-warning">已冻结</span>
+                                                {% elif user.is_active %}
+                                                    <span class="badge bg-success">正常</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">未激活</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ user.date_joined|date:"Y-m-d" }}</td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{% url 'system:edit_user' user.pk %}" class="btn btn-outline-primary">
+                                                        <i class="fa fa-edit"></i>
+                                                    </a>
+                                                    {% if user.is_frozen %}
+                                                        <a href="#" class="btn btn-outline-success" onclick="unfreezeUser({{ user.pk }})">
+                                                            <i class="fa fa-unlock"></i>
+                                                        </a>
+                                                    {% else %}
+                                                        <a href="#" class="btn btn-outline-warning" onclick="freezeUser({{ user.pk }})">
+                                                            <i class="fa fa-lock"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- 分页 -->
+                        {% if is_paginated %}
+                            <nav aria-label="用户列表分页">
+                                <ul class="pagination justify-content-center">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}">首页</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}">上一页</a>
+                                        </li>
+                                    {% endif %}
+
+                                    <li class="page-item active">
+                                        <span class="page-link">
+                                            第 {{ page_obj.number }} 页，共 {{ page_obj.paginator.num_pages }} 页
+                                        </span>
+                                    </li>
+
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}">下一页</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}">末页</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fa fa-users fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">暂无用户</h5>
+                            <p class="text-muted">还没有任何用户，<a href="{% url 'system:create_user' %}">点击添加第一个用户</a></p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

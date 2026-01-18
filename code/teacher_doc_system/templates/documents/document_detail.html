@@ -1,0 +1,410 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ document.title }} - 教师文档管理系统{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 页面头部样式 */
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    
+    .page-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .page-header .breadcrumb-item a {
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+    }
+    
+    .page-header .breadcrumb-item a:hover {
+        color: white;
+    }
+    
+    .page-header .breadcrumb-item.active {
+        color: white;
+        font-weight: 600;
+    }
+
+    /* 文档信息卡片 */
+    .document-info-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border: none;
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+    
+    .document-info-card .card-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid #dee2e6;
+        padding: 1.5rem;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .document-info-card .card-body {
+        padding: 2rem;
+    }
+    
+    .document-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: white;
+        margin-bottom: 1rem;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .document-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #343a40;
+        margin-bottom: 1rem;
+    }
+    
+    .document-meta {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+    }
+    
+    .meta-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .meta-item:last-child {
+        border-bottom: none;
+    }
+    
+    .meta-label {
+        font-weight: 600;
+        color: #6c757d;
+    }
+    
+    .meta-value {
+        color: #495057;
+    }
+    
+    .status-badge {
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+    
+    .status-draft {
+        background: #e9ecef;
+        color: #6c757d;
+    }
+    
+    .status-published {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .status-archived {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .status-rejected {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .document-description {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+        line-height: 1.6;
+        color: #495057;
+    }
+    
+    .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 2rem;
+    }
+    
+    .btn {
+        border-radius: 25px;
+        padding: 0.6rem 1.2rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        white-space: nowrap;
+        font-size: 0.9rem;
+    }
+    
+    /* 响应式：小屏幕时按钮更紧凑 */
+    @media (max-width: 768px) {
+        .action-buttons {
+            gap: 0.5rem;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+        }
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        color: white;
+    }
+    
+    .btn-outline-secondary {
+        border: 2px solid #6c757d;
+        color: #6c757d;
+    }
+    
+    .btn-outline-secondary:hover {
+        background: #6c757d;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    .btn-outline-danger {
+        border: 2px solid #dc3545;
+        color: #dc3545;
+    }
+    
+    .btn-outline-danger:hover {
+        background: #dc3545;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    /* 文件类型图标颜色 */
+    .file-icon.pdf { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); }
+    .file-icon.doc, .file-icon.docx { background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); }
+    .file-icon.ppt, .file-icon.pptx { background: linear-gradient(135deg, #fd7e14 0%, #e55a00 100%); }
+    .file-icon.xls, .file-icon.xlsx { background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); }
+    .file-icon.txt { background: linear-gradient(135deg, #6c757d 0%, #545b62 100%); }
+    .file-icon.md { background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%); }
+    .file-icon.zip, .file-icon.rar, .file-icon.seven-z { background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%); }
+    .file-icon.jpg, .file-icon.jpeg, .file-icon.png, .file-icon.gif { background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%); }
+    .file-icon { background: linear-gradient(135deg, #6c757d 0%, #545b62 100%); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 页面头部 -->
+    <div class="page-header">
+        <div class="container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb bg-transparent p-0 mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'documents:document_list' %}">文档列表</a></li>
+                    {% if document.category %}
+                        <li class="breadcrumb-item"><a href="{% url 'documents:category_documents' document.category.pk %}">{{ document.category.name }}</a></li>
+                    {% endif %}
+                    <li class="breadcrumb-item active" aria-current="page">{{ document.title }}</li>
+                </ol>
+            </nav>
+            <h1 class="mb-2">
+                <i class="fa fa-file-alt me-3"></i>{{ document.title }}
+            </h1>
+            <p class="mb-0 opacity-75">
+                {% if document.category %}
+                    分类：{{ document.category.name }}
+                {% else %}
+                    未分类
+                {% endif %}
+                | 作者：{{ document.author.get_full_name|default:document.author.username }}
+            </p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- 文档信息卡片 -->
+                <div class="document-info-card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="fa fa-info-circle me-2"></i>文档信息</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 text-center">
+                                <div class="document-icon file-icon {{ document.file_type|lower }}">
+                                    <i class="fa fa-file-{{ document.file_type|lower }}"></i>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <h2 class="document-title">{{ document.title }}</h2>
+                                
+                                <!-- 文档元信息 -->
+                                <div class="document-meta">
+                                    <div class="meta-item">
+                                        <span class="meta-label">文件类型</span>
+                                        <span class="meta-value">{{ document.file_type|upper }}</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <span class="meta-label">文件大小</span>
+                                        <span class="meta-value">{{ document.file_size|filesizeformat }}</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <span class="meta-label">上传时间</span>
+                                        <span class="meta-value">{{ document.created_at|date:"Y年m月d日 H:i" }}</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <span class="meta-label">最后更新</span>
+                                        <span class="meta-value">{{ document.updated_at|date:"Y年m月d日 H:i" }}</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <span class="meta-label">文档状态</span>
+                                        <span class="status-badge status-{{ document.status|lower }}">{{ document.get_status_display }}</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <span class="meta-label">访问权限</span>
+                                        <span class="meta-value">
+                                            {% if document.is_public %}
+                                                <span class="badge bg-success"><i class="fa fa-globe me-1"></i>公开</span>
+                                            {% else %}
+                                                <span class="badge bg-info"><i class="fa fa-lock me-1"></i>私有</span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <!-- 文档描述 -->
+                                {% if document.description %}
+                                <div class="document-description">
+                                    <h6 class="fw-bold mb-3"><i class="fa fa-align-left me-2"></i>文档描述</h6>
+                                    <p class="mb-0">{{ document.description|linebreaks }}</p>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- 审核未通过提示 -->
+                                {% if document.status == 'rejected' and document.author == user %}
+                                <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                                    <i class="fa fa-exclamation-triangle me-3 fa-2x"></i>
+                                    <div>
+                                        <h6 class="alert-heading mb-1">此文档审核未通过</h6>
+                                        <p class="mb-0">请根据管理员反馈修改文档内容，然后重新提交审核。</p>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- 操作按钮 -->
+                                <div class="action-buttons">
+                                    <a href="{% url 'documents:preview_document' document.pk %}" class="btn btn-primary" target="_blank">
+                                        <i class="fa fa-eye"></i> 预览文档
+                                    </a>
+                                    <a href="{% url 'documents:download_document' document.pk %}" class="btn btn-outline-secondary">
+                                        <i class="fa fa-download"></i> 下载文档
+                                    </a>
+                                    {% if document.author == user or user.is_superuser %}
+                                    <a href="{% url 'documents:edit_document' document.pk %}" class="btn btn-outline-secondary">
+                                        <i class="fa fa-edit"></i> 编辑文档
+                                    </a>
+                                    <a href="{% url 'documents:document_versions' document.pk %}" class="btn btn-outline-secondary">
+                                        <i class="fa fa-history"></i> 版本历史
+                                    </a>
+                                    <a href="{% url 'documents:delete_document' document.pk %}" class="btn btn-outline-danger" onclick="return confirm('确定要删除这个文档吗？')">
+                                        <i class="fa fa-trash"></i> 删除文档
+                                    </a>
+                                    {% endif %}
+                                    <a href="{% url 'documents:create_share_link' document.pk %}" class="btn btn-outline-secondary">
+                                        <i class="fa fa-share-alt"></i> 分享文档
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <!-- 作者信息 -->
+                <div class="document-info-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fa fa-user me-2"></i>作者信息</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="avatar me-3">
+                                <i class="fa fa-user-circle fa-3x text-primary"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1">{{ document.author.get_full_name|default:document.author.username }}</h6>
+                                <small class="text-muted">{{ document.author.get_role_display }}</small>
+                            </div>
+                        </div>
+                        {% if document.author.department %}
+                        <p class="mb-2"><i class="fa fa-building me-2"></i>{{ document.author.department }}</p>
+                        {% endif %}
+                        {% if document.author.email %}
+                        <p class="mb-0"><i class="fa fa-envelope me-2"></i>{{ document.author.email }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- 分类信息 -->
+                {% if document.category %}
+                <div class="document-info-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fa fa-tag me-2"></i>分类信息</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="fa {{ document.category.icon|default:'fa-folder' }} fa-2x text-primary"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1">{{ document.category.name }}</h6>
+                                {% if document.category.parent %}
+                                <small class="text-muted">父分类：{{ document.category.parent.name }}</small>
+                                {% else %}
+                                <small class="text-muted">顶级分类</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <a href="{% url 'documents:category_documents' document.category.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fa fa-folder-open me-1"></i> 查看该分类下的所有文档
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

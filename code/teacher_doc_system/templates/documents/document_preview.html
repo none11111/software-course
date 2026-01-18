@@ -1,0 +1,706 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ document.title }} - 预览 - 教师文档管理系统{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 预览页面样式 */
+    .preview-container {
+        background: #f8f9fa;
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+    
+    .preview-header {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+    }
+    
+    .preview-content {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .preview-header h1 {
+        color: #343a40;
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .preview-header .file-info {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .preview-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .btn {
+        border-radius: 25px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        color: white;
+    }
+    
+    .btn-outline-secondary {
+        border: 2px solid #6c757d;
+        color: #6c757d;
+    }
+    
+    .btn-outline-secondary:hover {
+        background: #6c757d;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    /* 图片预览样式 */
+    .image-preview {
+        text-align: center;
+        padding: 2rem;
+    }
+    
+    .image-preview img {
+        max-width: 100%;
+        max-height: 80vh;
+        border-radius: 10px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+    
+    /* 文本预览样式 */
+    .text-preview {
+        padding: 2rem;
+    }
+    
+    .text-preview pre {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        padding: 1.5rem;
+        overflow-x: auto;
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    
+    /* 代码高亮样式 */
+    .text-preview pre code {
+        background: none;
+        padding: 0;
+        border: none;
+        font-size: inherit;
+    }
+    
+    /* DOCX预览样式 */
+    .docx-preview {
+        background: white;
+        border-radius: 10px;
+        padding: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .docx-header {
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .docx-header h3 {
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+    
+    .docx-content {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        border-left: 4px solid #007bff;
+    }
+    
+    .content-text {
+        line-height: 1.8;
+        color: #2c3e50;
+        font-size: 1rem;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    
+    /* 增强DOCX预览样式 */
+    .docx-enhanced-preview {
+        background: white;
+        border-radius: 10px;
+        padding: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .doc-stats {
+        margin-top: 1rem;
+    }
+    
+    .doc-stats .badge {
+        font-size: 0.9rem;
+        padding: 0.5rem 0.8rem;
+    }
+    
+    .paragraphs-section, .tables-section {
+        margin-top: 2rem;
+    }
+    
+    .paragraphs-section h4, .tables-section h4 {
+        color: #495057;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .paragraph-item {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #007bff;
+    }
+    
+    .paragraph-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .para-index {
+        background: #007bff;
+        color: white;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+    
+    .para-style {
+        background: #6c757d;
+        color: white;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+    }
+    
+    .para-size {
+        background: #28a745;
+        color: white;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+    }
+    
+    .format-tags {
+        display: flex;
+        gap: 0.3rem;
+        flex-wrap: wrap;
+    }
+    
+    .format-tag {
+        font-size: 0.7rem;
+        padding: 0.1rem 0.3rem;
+        border-radius: 3px;
+        font-weight: bold;
+    }
+    
+    .format-tag.bold {
+        background: #ffc107;
+        color: #000;
+    }
+    
+    .format-tag.italic {
+        background: #17a2b8;
+        color: white;
+    }
+    
+    .format-tag.underline {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .paragraph-text {
+        line-height: 1.6;
+        color: #2c3e50;
+        font-size: 1rem;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    
+    .table-item {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border-left: 4px solid #28a745;
+    }
+    
+    .table-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .table-title {
+        background: #28a745;
+        color: white;
+        padding: 0.3rem 0.8rem;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+    
+    .table-size {
+        background: #6c757d;
+        color: white;
+        padding: 0.3rem 0.8rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+    
+    .table-responsive {
+        overflow-x: auto;
+    }
+    
+    .table-responsive table {
+        margin-bottom: 0;
+    }
+    
+    .table-responsive td {
+        vertical-align: top;
+        padding: 0.5rem;
+        border: 1px solid #dee2e6;
+    }
+    
+    .fw-bold {
+        font-weight: bold !important;
+    }
+    
+    .fst-italic {
+        font-style: italic !important;
+    }
+    
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+        .preview-container {
+            padding: 1rem 0;
+        }
+        
+        .preview-header {
+            padding: 1rem;
+        }
+        
+        .preview-header h1 {
+            font-size: 1.5rem;
+        }
+        
+        .preview-actions {
+            flex-direction: column;
+        }
+        
+        .text-preview {
+            padding: 1rem;
+        }
+        
+        .image-preview {
+            padding: 1rem;
+        }
+        
+        .docx-preview {
+            padding: 1rem;
+        }
+        
+        .docx-content {
+            padding: 1rem;
+        }
+    }
+    
+    /* PPT预览样式 */
+    .pptx-preview {
+        background: white;
+        border-radius: 10px;
+        padding: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .pptx-header {
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .pptx-header h3 {
+        color: #dc3545;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .ppt-stats {
+        margin-top: 1rem;
+    }
+    
+    .ppt-stats .badge {
+        font-size: 0.9rem;
+        padding: 0.5rem 0.8rem;
+    }
+    
+    .slide-preview {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .slide-preview:hover {
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .slide-header {
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 0.8rem;
+        margin-bottom: 1rem;
+    }
+    
+    .slide-header h5 {
+        color: #495057;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .slide-content {
+        padding: 0.5rem 0;
+    }
+    
+    .slide-shapes {
+        margin-bottom: 1rem;
+    }
+    
+    .shape-item {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 0.8rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: flex-start;
+        transition: all 0.2s ease;
+    }
+    
+    .shape-item:hover {
+        background: #f8f9fa;
+        border-color: #dc3545;
+    }
+    
+    .shape-item i {
+        color: #dc3545;
+        margin-top: 0.2rem;
+        flex-shrink: 0;
+    }
+    
+    .shape-item span {
+        color: #495057;
+        line-height: 1.5;
+        margin-left: 0.5rem;
+    }
+    
+    .slide-notes {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 6px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .slide-notes h6 {
+        color: #856404;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .slide-notes p {
+        color: #856404;
+        margin: 0;
+        line-height: 1.5;
+    }
+    
+    .ppt-basic-preview {
+        background: white;
+        border-radius: 10px;
+        padding: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    
+    .ppt-header h3 {
+        color: #dc3545;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    
+    .ppt-info {
+        margin-top: 2rem;
+    }
+    
+    .ppt-info .alert {
+        border-radius: 8px;
+        border: none;
+        padding: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="preview-container">
+    <div class="container">
+        <!-- 预览头部 -->
+        <div class="preview-header">
+            <h1>
+                <i class="fa fa-eye me-2"></i>{{ document.title }}
+            </h1>
+            <div class="file-info">
+                <i class="fa fa-file-{{ document.file_type|lower }} me-1"></i>
+                {{ document.file_type|upper }} 文件 | 
+                <i class="fa fa-weight-hanging me-1"></i>
+                {{ document.file.size|filesizeformat }} | 
+                <i class="fa fa-clock me-1"></i>
+                {{ document.created_at|date:"Y年m月d日 H:i" }}
+            </div>
+            <div class="preview-actions">
+                <a href="{% url 'documents:document_detail' document.pk %}" class="btn btn-outline-secondary">
+                    <i class="fa fa-arrow-left"></i> 返回详情
+                </a>
+                <a href="{% url 'documents:download_document' document.pk %}" class="btn btn-primary">
+                    <i class="fa fa-download"></i> 下载文档
+                </a>
+            </div>
+        </div>
+        
+        <!-- 预览内容 -->
+        <div class="preview-content">
+            {% if preview_type == 'image' %}
+                <!-- 图片预览 -->
+                <div class="image-preview">
+                    <img src="{{ file_url }}" alt="{{ document.title }}" class="img-fluid">
+                </div>
+            {% elif preview_type == 'text' %}
+                <!-- 文本预览 -->
+                <div class="text-preview">
+                    <pre><code>{{ file_content }}</code></pre>
+                </div>
+            {% elif preview_type == 'pptx' %}
+                <!-- PPTX文档预览 -->
+                <div class="pptx-preview">
+                    <div class="pptx-header">
+                        <h3><i class="fa fa-file-powerpoint me-2"></i>PowerPoint演示文稿预览</h3>
+                        <div class="ppt-stats">
+                            <span class="badge bg-primary me-2">
+                                <i class="fa fa-images me-1"></i>{{ total_slides }} 张幻灯片
+                            </span>
+                        </div>
+                    </div>
+                    <div class="pptx-content">
+                        {% for slide in slides_info %}
+                        <div class="slide-preview">
+                            <div class="slide-header">
+                                <h5><i class="fa fa-slideshare me-2"></i>第 {{ slide.slide_number }} 张幻灯片</h5>
+                            </div>
+                            <div class="slide-content">
+                                {% if slide.shapes %}
+                                    <div class="slide-shapes">
+                                        {% for shape in slide.shapes %}
+                                        <div class="shape-item">
+                                            <i class="fa fa-square me-2"></i>
+                                            <span>{{ shape.text }}</span>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted">此幻灯片无文本内容</p>
+                                {% endif %}
+                                {% if slide.notes %}
+                                    <div class="slide-notes">
+                                        <h6><i class="fa fa-sticky-note me-2"></i>备注：</h6>
+                                        <p>{{ slide.notes }}</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% elif preview_type == 'ppt_basic' %}
+                <!-- PPT基础信息预览 -->
+                <div class="ppt-basic-preview">
+                    <div class="ppt-header">
+                        <h3><i class="fa fa-file-powerpoint me-2"></i>PowerPoint演示文稿</h3>
+                        <p class="text-muted">此文件为PowerPoint演示文稿，系统暂不支持在线预览，请下载查看完整内容</p>
+                    </div>
+                    <div class="ppt-info">
+                        <div class="alert alert-info">
+                            <i class="fa fa-info-circle me-2"></i>
+                            <strong>提示：</strong>为了获得更好的预览体验，建议将PPT文件转换为PPTX格式后重新上传。
+                        </div>
+                    </div>
+                </div>
+            {% elif preview_type == 'docx' %}
+                <!-- DOCX文档预览 -->
+                <div class="docx-preview">
+                    <div class="docx-header">
+                        <h3><i class="fa fa-file-word me-2"></i>Word文档内容预览</h3>
+                        <p class="text-muted">以下是从Word文档中提取的文本内容</p>
+                    </div>
+                    <div class="docx-content">
+                        <div class="content-text">{{ file_content|linebreaks }}</div>
+                    </div>
+                </div>
+            {% elif preview_type == 'docx_enhanced' %}
+                <!-- 增强DOCX文档预览 -->
+                <div class="docx-enhanced-preview">
+                    <div class="docx-header">
+                        <h3><i class="fa fa-file-word me-2"></i>Word文档详细预览</h3>
+                        <div class="doc-stats">
+                            <span class="badge bg-primary me-2">
+                                <i class="fa fa-paragraph me-1"></i>{{ doc_info.total_paragraphs }} 段落
+                            </span>
+                            <span class="badge bg-success me-2">
+                                <i class="fa fa-table me-1"></i>{{ doc_info.total_tables }} 表格
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- 段落内容 -->
+                    {% if doc_info.paragraphs %}
+                    <div class="paragraphs-section">
+                        <h4><i class="fa fa-paragraph me-2"></i>文档内容</h4>
+                        {% for para in doc_info.paragraphs %}
+                        <div class="paragraph-item">
+                            <div class="paragraph-header">
+                                <span class="para-index">段落 {{ para.index }}</span>
+                                <span class="para-style">{{ para.style }}</span>
+                                {% if para.font_size %}
+                                <span class="para-size">{{ para.font_size }}</span>
+                                {% endif %}
+                                <div class="format-tags">
+                                    {% if para.bold %}<span class="format-tag bold">粗体</span>{% endif %}
+                                    {% if para.italic %}<span class="format-tag italic">斜体</span>{% endif %}
+                                    {% if para.underline %}<span class="format-tag underline">下划线</span>{% endif %}
+                                </div>
+                            </div>
+                            <div class="paragraph-text">{{ para.text }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- 表格内容 -->
+                    {% if doc_info.tables %}
+                    <div class="tables-section">
+                        <h4><i class="fa fa-table me-2"></i>表格数据</h4>
+                        {% for table in doc_info.tables %}
+                        <div class="table-item">
+                            <div class="table-header">
+                                <span class="table-title">表格 {{ table.index }}</span>
+                                <span class="table-size">{{ table.row_count }} 行 × {{ table.col_count }} 列</span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped">
+                                    {% for row in table.rows %}
+                                    <tr>
+                                        {% for cell in row.cells %}
+                                        <td class="{% if cell.bold %}fw-bold{% endif %} {% if cell.italic %}fst-italic{% endif %}">
+                                            {{ cell.text }}
+                                        </td>
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </table>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 图片预览功能增强
+    document.addEventListener('DOMContentLoaded', function() {
+        const images = document.querySelectorAll('.image-preview img');
+        images.forEach(img => {
+            img.addEventListener('click', function() {
+                // 创建全屏预览模态框
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.9);
+                    z-index: 9999;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                `;
+                
+                const fullImg = document.createElement('img');
+                fullImg.src = this.src;
+                fullImg.style.cssText = `
+                    max-width: 90%;
+                    max-height: 90%;
+                    object-fit: contain;
+                `;
+                
+                modal.appendChild(fullImg);
+                document.body.appendChild(modal);
+                
+                // 点击关闭
+                modal.addEventListener('click', function() {
+                    document.body.removeChild(modal);
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}删除文档 - 教师文档管理系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    确认删除文档
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-warning me-2"></i>
+                    <strong>警告：</strong>此操作不可撤销！删除后文档及其所有版本将永久丢失。
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        {% if document.file %}
+                            <div class="text-center mb-3">
+                                {% if document.file_type == 'pdf' %}
+                                    <i class="fas fa-file-pdf fa-3x text-danger"></i>
+                                {% elif document.file_type == 'doc' or document.file_type == 'docx' %}
+                                    <i class="fas fa-file-word fa-3x text-primary"></i>
+                                {% elif document.file_type == 'xls' or document.file_type == 'xlsx' %}
+                                    <i class="fas fa-file-excel fa-3x text-success"></i>
+                                {% elif document.file_type == 'ppt' or document.file_type == 'pptx' %}
+                                    <i class="fas fa-file-powerpoint fa-3x text-warning"></i>
+                                {% elif document.file_type == 'jpg' or document.file_type == 'jpeg' or document.file_type == 'png' or document.file_type == 'gif' %}
+                                    <i class="fas fa-file-image fa-3x text-info"></i>
+                                {% elif document.file_type == 'zip' or document.file_type == 'rar' or document.file_type == '7z' %}
+                                    <i class="fas fa-file-archive fa-3x text-secondary"></i>
+                                {% else %}
+                                    <i class="fas fa-file fa-3x text-muted"></i>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-8">
+                        <h5 class="text-danger">{{ document.title }}</h5>
+                        <p class="text-muted mb-2">
+                            <i class="fas fa-user me-1"></i>
+                            作者：{{ document.author.get_full_name|default:document.author.username }}
+                        </p>
+                        <p class="text-muted mb-2">
+                            <i class="fas fa-calendar me-1"></i>
+                            创建时间：{{ document.created_at|date:"Y-m-d H:i" }}
+                        </p>
+                        <p class="text-muted mb-2">
+                            <i class="fas fa-file me-1"></i>
+                            文件大小：{{ document.file_size|filesizeformat }}
+                        </p>
+                        <p class="text-muted mb-2">
+                            <i class="fas fa-tag me-1"></i>
+                            文件类型：{{ document.file_type|upper }}
+                        </p>
+                        {% if document.category %}
+                            <p class="text-muted mb-2">
+                                <i class="fas fa-folder me-1"></i>
+                                分类：{{ document.category.name }}
+                            </p>
+                        {% endif %}
+                        {% if document.description %}
+                            <p class="text-muted mb-2">
+                                <i class="fas fa-align-left me-1"></i>
+                                描述：{{ document.description|truncatechars:100 }}
+                            </p>
+                        {% endif %}
+                        <p class="text-muted mb-2">
+                            <i class="fas fa-download me-1"></i>
+                            下载次数：{{ document.download_count }}
+                        </p>
+                        <p class="text-muted mb-2">
+                            <i class="fas fa-eye me-1"></i>
+                            查看次数：{{ document.view_count }}
+                        </p>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>删除影响：</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>文档文件将从服务器永久删除</li>
+                        <li>所有文档版本历史将被清除</li>
+                        <li>相关的分享链接将失效</li>
+                        <li>您的存储使用量将减少 {{ document.file_size|filesizeformat }}</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-footer">
+                <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'documents:document_detail' document.pk %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>
+                            取消
+                        </a>
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('您确定要删除这个文档吗？此操作不可撤销！')">
+                            <i class="fas fa-trash me-1"></i>
+                            确认删除
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // 添加删除确认的额外保护
+    $('form').on('submit', function(e) {
+        if (!confirm('⚠️ 最终确认：您确定要永久删除文档 "{{ document.title }}" 吗？\n\n此操作将：\n• 删除文档文件\n• 清除所有版本历史\n• 使分享链接失效\n\n此操作不可撤销！')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

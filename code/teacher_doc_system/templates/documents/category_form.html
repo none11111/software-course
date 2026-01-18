@@ -1,0 +1,436 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}{% if object %}编辑分类{% else %}新建分类{% endif %} - 教师文档管理系统{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 页面整体样式 */
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    border-radius: 0 0 20px 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+/* 表单卡片样式 */
+.form-card {
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border: none;
+    overflow: hidden;
+    background: white;
+}
+
+.form-card .card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 3px solid #667eea;
+    padding: 1.5rem 2rem;
+}
+
+/* 图标预览样式 */
+.icon-preview {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    transition: all 0.3s ease;
+}
+
+.icon-preview:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* 表单控件样式 */
+.form-control {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+/* 按钮样式 */
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 25px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+}
+
+.btn-secondary {
+    border-radius: 25px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    transform: translateY(-2px);
+}
+
+/* 复选框样式 */
+.form-check-input {
+    width: 1.2rem;
+    height: 1.2rem;
+    border-radius: 6px;
+    border: 2px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.form-check-input:checked {
+    background-color: #667eea;
+    border-color: #667eea;
+}
+
+/* 动画效果 */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.form-card {
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+/* 图标选择样式 */
+.icon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    gap: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 15px;
+    background: #f8f9fa;
+}
+
+.icon-item {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+    font-size: 20px;
+    color: #667eea;
+}
+
+.icon-item:hover {
+    border-color: #667eea;
+    background: #f0f4ff;
+    transform: scale(1.1);
+}
+
+.icon-item.selected {
+    border-color: #667eea;
+    background: #667eea;
+    color: white;
+}
+
+.upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 10px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+}
+
+.upload-area:hover {
+    border-color: #667eea;
+    background: #f0f4ff;
+}
+
+.upload-area.dragover {
+    border-color: #667eea;
+    background: #f0f4ff;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .page-header {
+        padding: 1.5rem 0;
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-card .card-body {
+        padding: 1.5rem;
+    }
+    
+    .icon-grid {
+        grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+        gap: 8px;
+    }
+    
+    .icon-item {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 页面标题 -->
+    <div class="page-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-2">
+                        <i class="fa fa-tag me-3"></i> {% if object %}编辑分类{% else %}新建分类{% endif %}
+                    </h1>
+                    <p class="mb-0 opacity-75">{% if object %}修改分类信息{% else %}创建新的文档分类{% endif %}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card form-card">
+                    <div class="card-header">
+                        <h4 class="mb-0">
+                            <i class="fa fa-tag me-2"></i> {% if object %}编辑分类{% else %}新建分类{% endif %}
+                        </h4>
+                    </div>
+                    <div class="card-body p-4">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="{{ form.name.id_for_label }}" class="form-label">
+                                        <i class="fa fa-tag"></i> 分类名称 *
+                                    </label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                        <div class="text-danger mt-1">
+                                            {% for error in form.name.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.parent.id_for_label }}" class="form-label">
+                                        <i class="fa fa-folder"></i> 父分类
+                                    </label>
+                                    {{ form.parent }}
+                                    {% if form.parent.errors %}
+                                        <div class="text-danger mt-1">
+                                            {% for error in form.parent.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.icon.id_for_label }}" class="form-label">
+                                        <i class="fa fa-picture-o"></i> 图标选择
+                                    </label>
+                                    <div class="icon-selection">
+                                        <div class="mb-3">
+                                            <input type="text" class="form-control" id="iconSearch" placeholder="搜索图标...">
+                                        </div>
+                                        <div class="icon-grid" id="iconGrid">
+                                            <!-- 常用图标 -->
+                                            <div class="icon-item" data-icon="fa-folder">
+                                                <i class="fa fa-folder"></i>
+                                            </div>
+                                            <div class="icon-item" data-icon="fa-file-text">
+                                                <i class="fa fa-file-text"></i>
+                                            </div>
+                                            <div class="icon-item" data-icon="fa-image">
+                                                <i class="fa fa-image"></i>
+                                            </div>
+                                            <div class="icon-item" data-icon="fa-book">
+                                                <i class="fa fa-book"></i>
+                                            </div>
+                                            <div class="icon-item" data-icon="fa-graduation-cap">
+                                                <i class="fa fa-graduation-cap"></i>
+                                            </div>
+                                            <div class="icon-item" data-icon="fa-users">
+                                                <i class="fa fa-users"></i>
+                                            </div>
+                                            <div class="icon-item" data-icon="fa-chart-bar">
+                                                <i class="fa fa-chart-bar"></i>
+                                            </div>
+                                            <div class="icon-item" data-icon="fa-cog">
+                                                <i class="fa fa-cog"></i>
+                                            </div>
+                                            <div class="icon-item" data-icon="fa-star">
+                                                <i class="fa fa-star"></i>
+                                            </div>
+                                            <div class="icon-item" data-icon="fa-heart">
+                                                <i class="fa fa-heart"></i>
+                                            </div>
+                                            <div class="icon-item" data-icon="fa-check-circle">
+                                                <i class="fa fa-check-circle"></i>
+                                            </div>
+                                            <div class="icon-item" data-icon="fa-exclamation-triangle">
+                                                <i class="fa fa-exclamation-triangle"></i>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- 隐藏的图标输入框 -->
+                                        {{ form.icon }}
+                                    </div>
+                                    {% if form.icon.errors %}
+                                        <div class="text-danger mt-1">
+                                            {% for error in form.icon.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">图标预览</label>
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-preview me-3" id="iconPreview">
+                                            <i class="fa fa-folder"></i>
+                                        </div>
+                                        <small class="text-muted">实时预览</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'documents:category_list' %}" class="btn btn-secondary me-md-2">
+                                <i class="fa fa-arrow-left me-2"></i> 取消
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa fa-save me-2"></i> {% if object %}更新分类{% else %}创建分类{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const iconInput = document.getElementById('{{ form.icon.id_for_label }}');
+    const iconPreview = document.getElementById('iconPreview');
+    const iconGrid = document.getElementById('iconGrid');
+    const iconSearch = document.getElementById('iconSearch');
+    
+    // 图标预览更新函数
+    function updateIconPreview() {
+        const iconValue = iconInput.value.trim();
+        if (iconValue) {
+            // FontAwesome 图标
+            const iconClass = iconValue.startsWith('fa-') ? iconValue : 'fa-' + iconValue;
+            iconPreview.innerHTML = `<i class="fa ${iconClass}"></i>`;
+        } else {
+            iconPreview.innerHTML = '<i class="fa fa-folder"></i>';
+        }
+    }
+    
+    
+    // FontAwesome 图标选择
+    iconGrid.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (e.target.closest('.icon-item')) {
+            const iconItem = e.target.closest('.icon-item');
+            const iconClass = iconItem.dataset.icon;
+            
+            // 移除其他选中状态
+            document.querySelectorAll('.icon-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // 设置当前选中
+            iconItem.classList.add('selected');
+            
+            // 更新输入框和预览
+            iconInput.value = iconClass;
+            updateIconPreview();
+        }
+    });
+    
+    // 图标搜索
+    iconSearch.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const iconItems = iconGrid.querySelectorAll('.icon-item');
+        
+        iconItems.forEach(item => {
+            const iconClass = item.dataset.icon.toLowerCase();
+            if (iconClass.includes(searchTerm)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    });
+    
+    
+    // 初始化预览
+    updateIconPreview();
+});
+</script>
+{% endblock %}

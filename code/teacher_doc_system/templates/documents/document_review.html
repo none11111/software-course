@@ -1,0 +1,214 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}审核文档 - {{ document.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="fa fa-clipboard-check text-warning me-2"></i>审核文档
+                </h2>
+                <div>
+                    <a href="{% url 'documents:document_review_list' %}" class="btn btn-outline-secondary">
+                        <i class="fa fa-arrow-left me-1"></i>返回审核列表
+                    </a>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- 文档信息 -->
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fa fa-file-alt me-2"></i>文档信息
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><strong>文档标题：</strong></td>
+                                            <td>{{ document.title }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>文档描述：</strong></td>
+                                            <td>{{ document.description|default:"无描述" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>文档分类：</strong></td>
+                                            <td>
+                                                {% if document.category %}
+                                                    <span class="badge bg-primary">{{ document.category.name }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">未分类</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>文档状态：</strong></td>
+                                            <td><span class="badge bg-warning">待审核</span></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><strong>文件类型：</strong></td>
+                                            <td>
+                                                <i class="fas fa-{{ document.file_type|default:'file' }} me-1"></i>
+                                                {{ document.file_type|upper|default:"未知" }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>文件大小：</strong></td>
+                                            <td>{{ document.file_size|filesizeformat }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>公开设置：</strong></td>
+                                            <td>
+                                                {% if document.is_public %}
+                                                    <span class="badge bg-success">公开</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">私有</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>查看次数：</strong></td>
+                                            <td>{{ document.view_count }} 次</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 文档预览 -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fa fa-eye me-2"></i>文档预览
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center">
+                                <a href="{% url 'documents:preview_document' document.pk %}" 
+                                   class="btn btn-primary btn-lg" target="_blank">
+                                    <i class="fa fa-eye me-2"></i>预览文档内容
+                                </a>
+                                <a href="{% url 'documents:download_document' document.pk %}" 
+                                   class="btn btn-outline-primary btn-lg ms-2">
+                                    <i class="fa fa-download me-2"></i>下载文档
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 提交者信息 -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fa fa-user me-2"></i>提交者信息
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center mb-3">
+                                <i class="fa fa-user-circle fa-3x text-primary"></i>
+                            </div>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>姓名：</strong></td>
+                                    <td>{{ document.author.get_full_name|default:document.author.username }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>工号：</strong></td>
+                                    <td>{{ document.author.employee_id }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>部门：</strong></td>
+                                    <td>{{ document.author.department|default:"未设置" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>角色：</strong></td>
+                                    <td>
+                                        <span class="badge bg-{% if document.author.role == 'admin' %}danger{% else %}primary{% endif %}">
+                                            {{ document.author.get_role_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>提交时间：</strong></td>
+                                    <td>{{ document.created_at|date:"Y-m-d H:i" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 审核操作 -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fa fa-gavel me-2"></i>审核操作
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" id="reviewForm">
+                                {% csrf_token %}
+                                <div class="d-grid gap-2">
+                                    <button type="submit" name="action" value="approve" 
+                                            class="btn btn-success btn-lg" 
+                                            id="approveBtn">
+                                        <i class="fa fa-check me-2"></i>审核通过
+                                    </button>
+                                    <button type="submit" name="action" value="reject" 
+                                            class="btn btn-danger btn-lg" 
+                                            id="rejectBtn">
+                                        <i class="fa fa-times me-2"></i>审核拒绝
+                                    </button>
+                                </div>
+                            </form>
+                            
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <i class="fa fa-info-circle me-1"></i>
+                                    <strong>审核通过：</strong>文档将变为已归档状态，仅管理员可见<br>
+                                    <strong>审核拒绝：</strong>文档将变为审核未通过状态，教师可重新提交
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 审核表单确认 - 简化版本，只显示一次确认
+    const approveBtn = document.getElementById('approveBtn');
+    const rejectBtn = document.getElementById('rejectBtn');
+    
+    approveBtn.addEventListener('click', function(e) {
+        if (!confirm('确定要审核通过此文档吗？\n\n审核通过后，文档将变为已归档状态，仅管理员可见。')) {
+            e.preventDefault();
+        }
+    });
+    
+    rejectBtn.addEventListener('click', function(e) {
+        if (!confirm('确定要拒绝此文档吗？\n\n拒绝后，文档将变为审核未通过状态，教师可重新提交。')) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

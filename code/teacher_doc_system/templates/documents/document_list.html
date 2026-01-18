@@ -1,0 +1,290 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}文档列表 - 教师文档管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-file-alt me-2"></i>
+                文档列表
+            </h2>
+            <a href="{% url 'documents:upload_document' %}" class="btn btn-primary">
+                <i class="fas fa-upload me-1"></i>
+                上传文档
+            </a>
+        </div>
+
+        <!-- 搜索和筛选 -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">搜索关键词</label>
+                        <input type="text" name="search" class="form-control" 
+                               value="{% if filters.search %}{{ filters.search }}{% endif %}" placeholder="搜索文档标题、描述或作者...">
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <label class="form-label">文档分类</label>
+                        <select name="category" class="form-select">
+                            <option value="">所有分类</option>
+                            {% for category in categories %}
+                                <option value="{{ category.id }}" {% if filters.category == category.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ category.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <label class="form-label">文件类型</label>
+                        <select name="file_type" class="form-select">
+                            <option value="">所有类型</option>
+                            {% for file_type in file_types %}
+                                <option value="{{ file_type }}" {% if filters.file_type == file_type %}selected{% endif %}>
+                                    {{ file_type|upper }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <label class="form-label">开始日期</label>
+                        <input type="date" name="date_from" class="form-control" value="{% if filters.date_from %}{{ filters.date_from }}{% endif %}">
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <label class="form-label">结束日期</label>
+                        <input type="date" name="date_to" class="form-control" value="{% if filters.date_to %}{{ filters.date_to }}{% endif %}">
+                    </div>
+                    
+                    <div class="col-md-1">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <a href="{% url 'documents:document_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="my_docs_only" 
+                                   value="true" {% if filters.my_docs_only %}checked{% endif %}>
+                            <label class="form-check-label">
+                                仅显示我的文档
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 文档列表 -->
+        <div class="card">
+            <div class="card-body">
+                {% if documents %}
+                    <form method="post" action="{% url 'documents:batch_delete_documents' %}" id="batchDeleteForm">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="selectAll">
+                                    <label class="form-check-label" for="selectAll">全选</label>
+                                </div>
+                            </div>
+                            <div>
+                                <button type="submit" class="btn btn-danger btn-sm" id="batchDeleteBtn" disabled>
+                                    <i class="fas fa-trash-alt me-1"></i> 批量删除
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th style="width:40px;"></th>
+                                    <th>文档信息</th>
+                                    <th>作者</th>
+                                    <th>分类</th>
+                                    <th>大小</th>
+                                    <th>下载次数</th>
+                                    <th>创建时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for document in documents %}
+                                <tr>
+                                    <td>
+                                        {% if document.author == user %}
+                                        <div class="form-check">
+                                            <input class="form-check-input doc-check" type="checkbox" name="document_ids" value="{{ document.pk }}">
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-{{ document.file_type|default:'file' }} me-2 text-primary"></i>
+                                            <div>
+                                                <strong>{{ document.title }}</strong>
+                                                {% if document.is_public %}
+                                                    <span class="badge bg-success ms-1">公开</span>
+                                                {% endif %}
+                                                {% if document.status == 'draft' %}
+                                                    <span class="badge bg-secondary ms-1">草稿</span>
+                                                {% elif document.status == 'review' %}
+                                                    <span class="badge bg-warning ms-1">待审核</span>
+                                                {% elif document.status == 'published' %}
+                                                    <span class="badge bg-primary ms-1">已发布</span>
+                                                {% elif document.status == 'archived' %}
+                                                    <span class="badge bg-dark ms-1">已归档</span>
+                                                {% endif %}
+                                                {% if document.description %}
+                                                    <br><small class="text-muted">{{ document.description|truncatechars:50 }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ document.author.get_full_name|default:document.author.username }}</td>
+                                    <td>
+                                        {% if document.category %}
+                                            {{ document.category.name }}
+                                        {% else %}
+                                            <span class="text-muted">未分类</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ document.file_size|filesizeformat }}</td>
+                                    <td>
+                                        <span class="badge bg-info">{{ document.download_count }}</span>
+                                    </td>
+                                    <td>{{ document.created_at|date:"Y-m-d H:i" }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'documents:document_detail' document.pk %}" 
+                                               class="btn btn-outline-primary" title="查看详情">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'documents:download_document' document.pk %}" 
+                                               class="btn btn-outline-success" title="下载">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                            {% if document.author == user %}
+                                                <a href="{% url 'documents:edit_document' document.pk %}" 
+                                                   class="btn btn-outline-warning" title="编辑">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{% url 'documents:create_share_link' document.pk %}" 
+                                                   class="btn btn-outline-info" title="分享">
+                                                    <i class="fas fa-share-alt"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        </div>
+                    </form>
+
+                    <!-- 分页 -->
+                    {% if is_paginated %}
+                        <nav aria-label="文档分页">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">首页</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">上一页</a>
+                                    </li>
+                                {% endif %}
+
+                                <li class="page-item active">
+                                    <span class="page-link">
+                                        第 {{ page_obj.number }} 页，共 {{ page_obj.paginator.num_pages }} 页
+                                    </span>
+                                </li>
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">下一页</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">末页</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">暂无文档</h5>
+                        <p class="text-muted">还没有找到符合条件的文档</p>
+                        <a href="{% url 'documents:upload_document' %}" class="btn btn-primary">
+                            <i class="fas fa-upload me-1"></i>
+                            上传第一个文档
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // 自动提交搜索表单
+    $('input[name="search"]').on('keyup', function(e) {
+        if (e.keyCode === 13) { // Enter键
+            $(this).closest('form').submit();
+        }
+    });
+
+    // 全选与按钮状态
+    const selectAll = $('#selectAll');
+    const checks = $('.doc-check');
+    const btn = $('#batchDeleteBtn');
+
+    function refreshBtn() {
+        const anyChecked = $('.doc-check:checked').length > 0;
+        btn.prop('disabled', !anyChecked);
+    }
+
+    selectAll.on('change', function() {
+        checks.prop('checked', $(this).is(':checked'));
+        refreshBtn();
+    });
+
+    $(document).on('change', '.doc-check', function(){
+        const total = $('.doc-check').length;
+        const checked = $('.doc-check:checked').length;
+        selectAll.prop('checked', total > 0 && total === checked);
+        refreshBtn();
+    });
+
+    // 二次确认
+    $('#batchDeleteForm').on('submit', function(e){
+        if ($('.doc-check:checked').length === 0) {
+            e.preventDefault();
+            return false;
+        }
+        if (!confirm('确认删除选中的文档吗？该操作不可恢复。')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

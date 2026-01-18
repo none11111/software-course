@@ -1,0 +1,367 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}首页 - 教师文档管理系统{% endblock %}
+
+{% block extra_css %}
+<style>
+.dashboard-card {
+    transition: transform 0.2s ease-in-out;
+}
+.dashboard-card:hover {
+    transform: translateY(-2px);
+}
+.stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+.stat-card.success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+.stat-card.warning {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+.stat-card.info {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+.stat-card.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+.chart-container {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+.recent-docs {
+    max-height: 400px;
+    overflow-y: auto;
+}
+.storage-bar {
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.storage-progress {
+    height: 100%;
+    background: linear-gradient(90deg, #28a745, #ffc107, #dc3545);
+    transition: width 0.3s ease;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- 页面标题 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">
+                    <i class="fa fa-home text-primary"></i> 首页
+                </h2>
+                <div class="text-muted">
+                    <i class="fa fa-calendar"></i> {{ "now"|date:"Y年m月d日" }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stat-card success">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="mb-1">{{ total_documents }}</h3>
+                        <p class="mb-0">总文档数</p>
+                    </div>
+                    <div class="text-end">
+                        <i class="fa fa-file-alt fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stat-card info">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="mb-1">{{ public_documents }}</h3>
+                        <p class="mb-0">公开文档</p>
+                    </div>
+                    <div class="text-end">
+                        <i class="fa fa-globe fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stat-card warning">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="mb-1">{{ active_share_links }}</h3>
+                        <p class="mb-0">活跃分享</p>
+                    </div>
+                    <div class="text-end">
+                        <i class="fa fa-share-alt fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stat-card primary">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="mb-1">{{ recent_uploads }}</h3>
+                        <p class="mb-0">本周上传</p>
+                    </div>
+                    <div class="text-end">
+                        <i class="fa fa-upload fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 审核状态统计 -->
+    {% if rejected_documents > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-warning d-flex align-items-center" role="alert">
+                <i class="fa fa-exclamation-triangle me-3 fa-2x"></i>
+                <div>
+                    <h5 class="alert-heading mb-1">您有 {{ rejected_documents }} 个文档审核未通过</h5>
+                    <p class="mb-0">请查看文档详情，修改后重新提交审核。</p>
+                    <a href="{% url 'documents:document_list' %}?status=rejected" class="btn btn-warning btn-sm mt-2">
+                        <i class="fa fa-eye me-1"></i>查看审核未通过的文档
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    </div>
+
+    <!-- 存储使用情况 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="chart-container">
+                <h5 class="mb-3">
+                    <i class="fa fa-hdd text-primary"></i> 存储使用情况
+                </h5>
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="storage-bar mb-2">
+                            <div class="storage-progress" style="width: {{ storage_percentage }}%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted small">
+                            <span>已使用: {{ total_storage_used|filesizeformat }}</span>
+                            <span>{{ storage_percentage }}%</span>
+                            <span>总配额: {{ total_storage_quota|filesizeformat }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="h4 text-primary">{{ storage_percentage }}%</div>
+                        <small class="text-muted">存储使用率</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 文档分类统计 -->
+        <div class="col-lg-6 mb-4">
+            <div class="chart-container">
+                <h5 class="mb-3">
+                    <i class="fa fa-chart-pie text-primary"></i> 文档分类统计
+                </h5>
+                {% if category_stats %}
+                    {% for stat in category_stats %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-primary rounded-circle me-2" style="width: 12px; height: 12px;"></div>
+                            <span>{{ stat.category__name|default:"未分类" }}</span>
+                        </div>
+                        <span class="badge bg-primary">{{ stat.count }}</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="fa fa-chart-pie fa-2x mb-2"></i>
+                        <p>暂无文档分类数据</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 文件类型统计 -->
+        <div class="col-lg-6 mb-4">
+            <div class="chart-container">
+                <h5 class="mb-3">
+                    <i class="fa fa-chart-bar text-primary"></i> 文件类型统计
+                </h5>
+                {% if file_type_stats %}
+                    {% for stat in file_type_stats %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-success rounded-circle me-2" style="width: 12px; height: 12px;"></div>
+                            <span>{{ stat.file_type|upper }}</span>
+                        </div>
+                        <span class="badge bg-success">{{ stat.count }}</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="fa fa-chart-bar fa-2x mb-2"></i>
+                        <p>暂无文件类型数据</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 最近文档和快速操作 -->
+    <div class="row">
+        <!-- 最近上传的文档 -->
+        <div class="col-lg-8 mb-4">
+            <div class="chart-container">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">
+                        <i class="fa fa-clock text-primary"></i> 最近上传的文档
+                    </h5>
+                    <a href="{% url 'documents:document_list' %}" class="btn btn-sm btn-outline-primary">
+                        查看全部 <i class="fa fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="recent-docs">
+                    {% if recent_documents %}
+                        {% for doc in recent_documents %}
+                        <div class="d-flex align-items-center p-3 border-bottom">
+                            <div class="me-3">
+                                {% if doc.file_type == 'pdf' %}
+                                    <i class="fa fa-file-pdf text-danger fa-2x"></i>
+                                {% elif doc.file_type == 'doc' or doc.file_type == 'docx' %}
+                                    <i class="fa fa-file-word text-primary fa-2x"></i>
+                                {% elif doc.file_type == 'ppt' or doc.file_type == 'pptx' %}
+                                    <i class="fa fa-file-powerpoint text-warning fa-2x"></i>
+                                {% elif doc.file_type == 'xls' or doc.file_type == 'xlsx' %}
+                                    <i class="fa fa-file-excel text-success fa-2x"></i>
+                                {% else %}
+                                    <i class="fa fa-file text-muted fa-2x"></i>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ doc.title }}</h6>
+                                <small class="text-muted">
+                                    {{ doc.file_size|filesizeformat }} • 
+                                    {{ doc.created_at|timesince }}前
+                                    {% if doc.is_public %}
+                                        <span class="badge bg-success ms-2">公开</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary ms-2">私有</span>
+                                    {% endif %}
+                                    {% if doc.status == 'draft' %}
+                                        <span class="badge bg-secondary ms-1">草稿</span>
+                                    {% elif doc.status == 'review' %}
+                                        <span class="badge bg-warning ms-1">待审核</span>
+                                    {% elif doc.status == 'published' %}
+                                        <span class="badge bg-primary ms-1">已发布</span>
+                                    {% elif doc.status == 'archived' %}
+                                        <span class="badge bg-dark ms-1">已归档</span>
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="fa fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{% url 'documents:document_detail' doc.pk %}">
+                                        <i class="fa fa-eye"></i> 查看详情
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'documents:download_document' doc.pk %}">
+                                        <i class="fa fa-download"></i> 下载
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fa fa-file fa-3x mb-3"></i>
+                            <p>暂无上传的文档</p>
+                            <a href="{% url 'documents:upload_document' %}" class="btn btn-primary">
+                                <i class="fa fa-upload"></i> 立即上传
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速操作 -->
+        <div class="col-lg-4 mb-4">
+            <div class="chart-container">
+                <h5 class="mb-3">
+                    <i class="fa fa-bolt text-primary"></i> 快速操作
+                </h5>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'documents:upload_document' %}" class="btn btn-primary">
+                        <i class="fa fa-upload"></i> 上传文档
+                    </a>
+                    <a href="{% url 'documents:document_list' %}" class="btn btn-outline-primary">
+                        <i class="fa fa-list"></i> 文档列表
+                    </a>
+                    <a href="{% url 'documents:share_link_list' %}" class="btn btn-outline-success">
+                        <i class="fa fa-share-alt"></i> 分享管理
+                    </a>
+                    <a href="{% url 'documents:category_list' %}" class="btn btn-outline-info">
+                        <i class="fa fa-tags"></i> 分类管理
+                    </a>
+                </div>
+                
+                <hr class="my-3">
+                
+                <h6 class="text-muted mb-2">本周活动</h6>
+                <div class="small text-muted">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>上传文档</span>
+                        <span class="fw-bold">{{ recent_uploads }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>操作次数</span>
+                        <span class="fw-bold">{{ recent_operations }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>分享链接</span>
+                        <span class="fw-bold">{{ total_share_links }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 存储使用率警告
+document.addEventListener('DOMContentLoaded', function() {
+    const storagePercentage = {{ storage_percentage }};
+    const storageBar = document.querySelector('.storage-progress');
+    
+    if (storagePercentage > 80) {
+        storageBar.style.background = 'linear-gradient(90deg, #dc3545, #dc3545)';
+    } else if (storagePercentage > 60) {
+        storageBar.style.background = 'linear-gradient(90deg, #ffc107, #dc3545)';
+    }
+});
+</script>
+{% endblock %}

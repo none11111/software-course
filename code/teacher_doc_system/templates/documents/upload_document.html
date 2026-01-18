@@ -1,0 +1,569 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}上传文档 - 教师文档管理系统{% endblock %}
+
+{% block extra_css %}
+<style>
+.upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    background-color: #f8f9fa;
+}
+
+.upload-area:hover {
+    border-color: #007bff;
+    background-color: #e3f2fd;
+}
+
+.upload-area.dragover {
+    border-color: #007bff;
+    background-color: #e3f2fd;
+}
+
+.file-info {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.file-preview {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 4px;
+}
+
+.progress {
+    height: 8px;
+    border-radius: 4px;
+}
+
+.form-control.is-invalid {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fa fa-cloud-upload"></i> 上传文档
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger" role="alert">
+                            <i class="fa fa-exclamation-triangle me-2"></i>
+                            <strong>表单验证失败：</strong>
+                            {% for error in form.non_field_errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data" id="uploadForm">
+                        {% csrf_token %}
+
+                        <!-- 文件上传区域 -->
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="fa fa-file"></i> 选择文件 *
+                            </label>
+                            <div class="upload-area" id="uploadArea">
+                                <i class="fa fa-cloud-upload fa-3x text-muted mb-3"></i>
+                                <h5>拖拽文件到此处或点击选择文件</h5>
+                                <p class="text-muted mb-3">
+                                    支持的文件类型：PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, TXT, MD, ZIP, RAR, 7Z, JPG, JPEG, PNG, GIF
+                                </p>
+                                <p class="text-muted">
+                                    最大文件大小：{{ settings.TEACHER_DOC_SETTINGS.MAX_FILE_SIZE|filesizeformat }}
+                                </p>
+                                <div class="d-none">
+                                    {{ form.file }}
+                                </div>
+                                <button type="button" class="btn btn-outline-primary" id="selectFileBtn">
+                                    <i class="fa fa-folder-open"></i> 选择文件
+                                </button>
+                            </div>
+                            
+                            <!-- 文件信息显示 -->
+                            <div class="file-info" id="fileInfo" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h6 class="mb-1" id="fileName"></h6>
+                                        <small class="text-muted" id="fileSize"></small>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-danger" id="removeFile">
+                                            <i class="fa fa-times"></i> 移除
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="mt-2" id="filePreview"></div>
+                            </div>
+
+                            {% if form.file.errors %}
+                                <div class="text-danger mt-1">
+                                    <i class="fa fa-exclamation-triangle me-1"></i>
+                                    {% for error in form.file.errors %}
+                                        <small class="d-block">{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 文档信息 -->
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="{{ form.title.id_for_label }}" class="form-label">
+                                        <i class="fa fa-tag"></i> 文档标题 *
+                                    </label>
+                                    {{ form.title }}
+                                    {% if form.title.errors %}
+                                        <div class="text-danger mt-1">
+                                            <i class="fa fa-exclamation-triangle me-1"></i>
+                                            {% for error in form.title.errors %}
+                                                <small class="d-block">{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        <i class="fa fa-folder"></i> 文档分类
+                                    </label>
+                                    <div class="category-selector">
+                                        <button type="button" class="btn btn-outline-primary w-100 text-start" id="categorySelectBtn">
+                                            <i class="fa fa-folder me-2"></i>
+                                            <span id="selectedCategoryText">请选择分类</span>
+                                            <i class="fa fa-chevron-down float-end"></i>
+                                        </button>
+                                        <input type="hidden" name="category" id="selectedCategoryId" value="">
+                                        {% if form.category.errors %}
+                                            <div class="text-danger mt-1">
+                                                <i class="fa fa-exclamation-triangle me-1"></i>
+                                                {% for error in form.category.errors %}
+                                                    <small class="d-block">{{ error }}</small>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                <i class="fa fa-align-left"></i> 文档描述
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="text-danger mt-1">
+                                    <i class="fa fa-exclamation-triangle me-1"></i>
+                                    {% for error in form.description.errors %}
+                                        <small class="d-block">{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.status.id_for_label }}" class="form-label">
+                                        <i class="fa fa-flag"></i> 文档状态
+                                    </label>
+                                    {{ form.status }}
+                                    <small class="form-text text-muted">
+                                        <i class="fa fa-info-circle me-1"></i>
+                                        <strong>草稿</strong>：仅自己可见 | 
+                                        <strong>已发布</strong>：其他用户可见 | 
+                                        <strong>待审核</strong>：需管理员审核
+                                    </small>
+                                    {% if form.status.errors %}
+                                        <div class="text-danger mt-1">
+                                            <i class="fa fa-exclamation-triangle me-1"></i>
+                                            {% for error in form.status.errors %}
+                                                <small class="d-block">{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check mt-4">
+                                        {{ form.is_public }}
+                                        <label class="form-check-label" for="{{ form.is_public.id_for_label }}">
+                                            <i class="fa fa-globe"></i> 公开文档
+                                        </label>
+                                        <small class="form-text text-muted d-block">
+                                            勾选后其他用户可以看到此文档
+                                        </small>
+                                    </div>
+                                    {% if form.is_public.errors %}
+                                        <div class="text-danger mt-1">
+                                            <i class="fa fa-exclamation-triangle me-1"></i>
+                                            {% for error in form.is_public.errors %}
+                                                <small class="d-block">{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 存储配额信息 -->
+                        <div class="alert alert-info">
+                            <i class="fa fa-info-circle me-2"></i>
+                            <strong>存储配额：</strong>
+                            <span id="storageInfo">
+                                已使用：{{ request.user.get_storage_used|filesizeformat }} / 
+                                总配额：{{ request.user.get_storage_quota|filesizeformat }}
+                            </span>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'documents:document_list' %}" class="btn btn-secondary me-md-2">
+                                <i class="fa fa-arrow-left"></i> 取消
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="fa fa-upload"></i> 上传文档
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.querySelector('input[type="file"]');
+    const selectFileBtn = document.getElementById('selectFileBtn');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const filePreview = document.getElementById('filePreview');
+    const removeFileBtn = document.getElementById('removeFile');
+    const uploadForm = document.getElementById('uploadForm');
+    const submitBtn = document.getElementById('submitBtn');
+    let isSelectingFile = false;
+    
+    // 标记文件输入框有自定义处理器，避免与全局处理器冲突
+    $(fileInput).data('has-custom-handler', true);
+
+    // 拖拽上传
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            handleFileSelect(files[0]);
+        }
+    });
+
+    // 点击选择文件按钮
+    selectFileBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (isSelectingFile) {
+            return;
+        }
+        isSelectingFile = true;
+        fileInput.click();
+    });
+
+    // 点击上传区域（只在没有文件时显示选择对话框）
+    uploadArea.addEventListener('click', function(e) {
+        e.stopPropagation();
+        // 如果点击的是文件输入框本身或选择文件按钮，不处理
+        if (e.target === fileInput || e.target === selectFileBtn) {
+            return;
+        }
+        // 如果正在选择文件，不重复触发
+        if (isSelectingFile) {
+            return;
+        }
+        // 如果已经有文件了，不显示选择对话框
+        if (fileInput.files.length > 0) {
+            return;
+        }
+        isSelectingFile = true;
+        fileInput.click();
+    });
+
+    // 文件选择
+    fileInput.addEventListener('change', function(e) {
+        isSelectingFile = false;
+        if (e.target.files.length > 0) {
+            handleFileSelect(e.target.files[0]);
+        }
+    });
+
+    // 处理文件选择
+    function handleFileSelect(file) {
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+        
+        // 显示文件预览
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                filePreview.innerHTML = '<img src="' + e.target.result + '" class="file-preview" alt="预览">';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            const icon = getFileIcon(file.name);
+            filePreview.innerHTML = '<i class="' + icon + ' fa-3x text-muted"></i>';
+        }
+        
+        fileInfo.style.display = 'block';
+        selectFileBtn.style.display = 'none';
+    }
+
+    // 移除文件
+    removeFileBtn.addEventListener('click', function() {
+        fileInput.value = '';
+        fileInfo.style.display = 'none';
+        selectFileBtn.style.display = 'inline-block';
+    });
+
+    // 格式化文件大小
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // 获取文件图标
+    function getFileIcon(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        const iconMap = {
+            'pdf': 'fa fa-file-pdf-o',
+            'doc': 'fa fa-file-word-o',
+            'docx': 'fa fa-file-word-o',
+            'ppt': 'fa fa-file-powerpoint-o',
+            'pptx': 'fa fa-file-powerpoint-o',
+            'xls': 'fa fa-file-excel-o',
+            'xlsx': 'fa fa-file-excel-o',
+            'txt': 'fa fa-file-text-o',
+            'md': 'fa fa-file-text-o',
+            'zip': 'fa fa-file-archive-o',
+            'rar': 'fa fa-file-archive-o',
+            '7z': 'fa fa-file-archive-o',
+            'jpg': 'fa fa-file-image-o',
+            'jpeg': 'fa fa-file-image-o',
+            'png': 'fa fa-file-image-o',
+            'gif': 'fa fa-file-image-o'
+        };
+        return iconMap[ext] || 'fa fa-file-o';
+    }
+
+    // 表单提交
+    uploadForm.addEventListener('submit', function(e) {
+        if (!fileInput.files.length) {
+            e.preventDefault();
+            alert('请选择要上传的文件');
+            return;
+        }
+        
+        submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 上传中...';
+        submitBtn.disabled = true;
+    });
+
+    // 为有错误的字段添加红色边框
+    const errorFields = document.querySelectorAll('.text-danger');
+    errorFields.forEach(function(errorDiv) {
+        const fieldContainer = errorDiv.closest('.mb-3');
+        if (fieldContainer) {
+            const input = fieldContainer.querySelector('input, select, textarea');
+            if (input) {
+                input.classList.add('is-invalid');
+            }
+        }
+    });
+    
+    // 分类选择弹窗功能
+    const categorySelectBtn = document.getElementById('categorySelectBtn');
+    const categoryModal = document.getElementById('categoryModal');
+    const selectedCategoryText = document.getElementById('selectedCategoryText');
+    const selectedCategoryId = document.getElementById('selectedCategoryId');
+    
+    // 打开分类选择弹窗
+    if (categorySelectBtn) {
+        categorySelectBtn.addEventListener('click', function() {
+            const modal = new bootstrap.Modal(categoryModal);
+            modal.show();
+        });
+    }
+    
+    // 分类选择函数
+    window.selectCategory = function(element) {
+        console.log('选择分类:', element);
+        const categoryId = element.getAttribute('data-category-id');
+        const categoryName = element.getAttribute('data-category-name');
+        
+        console.log('分类ID:', categoryId, '分类名称:', categoryName);
+        
+        // 更新选中的分类
+        if (selectedCategoryId) {
+            selectedCategoryId.value = categoryId;
+        }
+        if (selectedCategoryText) {
+            selectedCategoryText.textContent = categoryName;
+        }
+        
+        // 关闭弹窗
+        if (categoryModal) {
+            const modal = bootstrap.Modal.getInstance(categoryModal);
+            if (modal) {
+                modal.hide();
+            }
+        }
+        
+        // 更新按钮样式
+        if (categorySelectBtn) {
+            categorySelectBtn.classList.remove('btn-outline-primary');
+            categorySelectBtn.classList.add('btn-primary');
+        }
+    };
+});
+</script>
+
+<!-- 分类选择弹窗 -->
+<div class="modal fade" id="categoryModal" tabindex="-1" aria-labelledby="categoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="categoryModalLabel">
+                    <i class="fa fa-folder me-2"></i>选择文档分类
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="category-tree">
+                    {% for category in categories %}
+                        {% if not category.parent %}
+                            <!-- 父分类 -->
+                            <div class="parent-category mb-3">
+                                <div class="category-item d-flex align-items-center p-3 border rounded" 
+                                     data-category-id="{{ category.id }}" 
+                                     data-category-name="{{ category.name }}"
+                                     data-is-parent="true"
+                                     style="cursor: pointer; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);"
+                                     onclick="selectCategory(this)">
+                                    <div class="me-3">
+                                        <i class="fa {{ category.icon|default:'fa-folder' }} fa-2x text-primary"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold">{{ category.name }}</h6>
+                                        <small class="text-muted">父分类</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <i class="fa fa-chevron-right text-muted"></i>
+                                    </div>
+                                </div>
+                                
+                                <!-- 子分类 -->
+                                {% for child in category.children.all %}
+                                    <div class="child-category ms-4 mb-2">
+                                        <div class="category-item d-flex align-items-center p-2 border rounded" 
+                                             data-category-id="{{ child.id }}" 
+                                             data-category-name="{{ child.name }}"
+                                             data-is-parent="false"
+                                             style="cursor: pointer; background: white; border-left: 4px solid #007bff !important;"
+                                             onclick="selectCategory(this)">
+                                            <div class="me-3">
+                                                <i class="fa {{ child.icon|default:'fa-file' }} text-secondary"></i>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <span class="fw-medium">{{ child.name }}</span>
+                                                <small class="text-muted d-block">子分类</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.category-item:hover {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%) !important;
+    transform: translateX(5px);
+    transition: all 0.3s ease;
+}
+
+.parent-category .category-item:hover {
+    background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%) !important;
+}
+
+.child-category .category-item:hover {
+    background: linear-gradient(135deg, #fff3e0 0%, #ffcc02 100%) !important;
+}
+
+.category-tree {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.category-item {
+    transition: all 0.3s ease;
+}
+
+.category-item:active {
+    transform: scale(0.98);
+}
+</style>
+{% endblock %}

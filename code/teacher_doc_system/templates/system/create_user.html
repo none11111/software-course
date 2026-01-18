@@ -1,0 +1,282 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}添加用户 - 教师文档管理系统{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-control.is-invalid {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.form-control.is-invalid:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.error-field {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fa fa-user-plus"></i> 添加用户
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger" role="alert">
+                            <i class="fa fa-exclamation-triangle me-2"></i>
+                            <strong>表单验证失败：</strong>
+                            {% for error in form.non_field_errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.username.id_for_label }}" class="form-label">
+                                        <i class="fa fa-user"></i> 用户名 *
+                                    </label>
+                                    {{ form.username }}
+                                    {% if form.username.errors %}
+                                        <div class="text-danger mt-1">
+                                            <i class="fa fa-exclamation-triangle me-1"></i>
+                                            {% for error in form.username.errors %}
+                                                <small class="d-block">{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.employee_id.id_for_label }}" class="form-label">
+                                        <i class="fa fa-id-card"></i> 工号 *
+                                    </label>
+                                    {{ form.employee_id }}
+                                    {% if form.employee_id.errors %}
+                                        <div class="text-danger mt-1">
+                                            <i class="fa fa-exclamation-triangle me-1"></i>
+                                            {% for error in form.employee_id.errors %}
+                                                <small class="d-block">{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                        <i class="fa fa-user"></i> 姓名
+                                    </label>
+                                    {{ form.first_name }}
+                                    {% if form.first_name.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.first_name.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                        <i class="fa fa-user"></i> 姓氏
+                                    </label>
+                                    {{ form.last_name }}
+                                    {% if form.last_name.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.last_name.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">
+                                <i class="fa fa-envelope"></i> 邮箱
+                            </label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger mt-1">
+                                    <i class="fa fa-exclamation-triangle me-1"></i>
+                                    {% for error in form.email.errors %}
+                                        <small class="d-block">{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.role.id_for_label }}" class="form-label">
+                                        <i class="fa fa-user-tag"></i> 角色 *
+                                    </label>
+                                    {{ form.role }}
+                                    {% if form.role.errors %}
+                                        <div class="text-danger mt-1">
+                                            <i class="fa fa-exclamation-triangle me-1"></i>
+                                            {% for error in form.role.errors %}
+                                                <small class="d-block">{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.department.id_for_label }}" class="form-label">
+                                        <i class="fa fa-building"></i> 部门
+                                    </label>
+                                    {{ form.department }}
+                                    {% if form.department.errors %}
+                                        <div class="text-danger mt-1">
+                                            <i class="fa fa-exclamation-triangle me-1"></i>
+                                            {% for error in form.department.errors %}
+                                                <small class="d-block">{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.password.id_for_label }}" class="form-label">
+                                        <i class="fa fa-lock"></i> 密码 *
+                                    </label>
+                                    {{ form.password }}
+                                    {% if form.password.help_text %}
+                                        <div class="form-text">{{ form.password.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.password.errors %}
+                                        <div class="text-danger mt-1">
+                                            <i class="fa fa-exclamation-triangle me-1"></i>
+                                            {% for error in form.password.errors %}
+                                                <small class="d-block">{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.confirm_password.id_for_label }}" class="form-label">
+                                        <i class="fa fa-lock"></i> 确认密码 *
+                                    </label>
+                                    {{ form.confirm_password }}
+                                    {% if form.confirm_password.errors %}
+                                        <div class="text-danger mt-1">
+                                            <i class="fa fa-exclamation-triangle me-1"></i>
+                                            {% for error in form.confirm_password.errors %}
+                                                <small class="d-block">{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.storage_quota_gb.id_for_label }}" class="form-label">
+                                        <i class="fa fa-database"></i> 存储配额 (GB) *
+                                    </label>
+                                    {{ form.storage_quota_gb }}
+                                    {% if form.storage_quota_gb.help_text %}
+                                        <div class="form-text">{{ form.storage_quota_gb.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.storage_quota_gb.errors %}
+                                        <div class="text-danger mt-1">
+                                            <i class="fa fa-exclamation-triangle me-1"></i>
+                                            {% for error in form.storage_quota_gb.errors %}
+                                                <small class="d-block">{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        <i class="fa fa-info-circle"></i> 存储配额说明
+                                    </label>
+                                    <div class="alert alert-info">
+                                        <small>
+                                            <i class="fa fa-lightbulb me-1"></i>
+                                            建议根据用户需求设置存储配额：
+                                            <br>• 普通教师：10-50GB
+                                            <br>• 高级教师：50-100GB
+                                            <br>• 管理员：100GB以上
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'system:user_list' %}" class="btn btn-secondary me-md-2">
+                                <i class="fa fa-arrow-left"></i> 取消
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa fa-save"></i> 创建用户
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 为有错误的字段添加红色边框
+    const errorFields = document.querySelectorAll('.text-danger');
+    errorFields.forEach(function(errorDiv) {
+        const fieldContainer = errorDiv.closest('.mb-3');
+        if (fieldContainer) {
+            const input = fieldContainer.querySelector('input, select, textarea');
+            if (input) {
+                input.classList.add('is-invalid');
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

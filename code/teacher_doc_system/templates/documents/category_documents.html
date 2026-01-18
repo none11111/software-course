@@ -1,0 +1,314 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ category.name }} - 文档列表 - 教师文档管理系统{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 页面整体样式 */
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    border-radius: 0 0 20px 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+/* 统计卡片样式 */
+.stats-card {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border-radius: 15px;
+    padding: 1.5rem;
+    color: white;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+    border: none;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+}
+
+.stats-card:nth-child(2) {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.stats-card:nth-child(3) {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+/* 文档卡片样式 */
+.document-card {
+    transition: all 0.3s ease;
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    overflow: hidden;
+    background: white;
+}
+
+.document-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.document-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: white;
+    margin-right: 1rem;
+}
+
+.file-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: white;
+    margin-right: 0.75rem;
+}
+
+/* 文件类型图标样式 */
+.file-icon.pdf { background: linear-gradient(135deg, #ff6b6b, #ee5a24); }
+.file-icon.doc, .file-icon.docx { background: linear-gradient(135deg, #2e86de, #54a0ff); }
+.file-icon.ppt, .file-icon.pptx { background: linear-gradient(135deg, #ff9ff3, #f368e0); }
+.file-icon.xls, .file-icon.xlsx { background: linear-gradient(135deg, #2ed573, #7bed9f); }
+.file-icon.txt { background: linear-gradient(135deg, #a4b0be, #747d8c); }
+.file-icon.md { background: linear-gradient(135deg, #ffa502, #ff6348); }
+.file-icon.zip, .file-icon.rar, .file-icon.seven-z { background: linear-gradient(135deg, #6f42c1, #8e44ad); }
+.file-icon.jpg, .file-icon.jpeg, .file-icon.png, .file-icon.gif { background: linear-gradient(135deg, #ff6b6b, #ee5a24); }
+
+/* 状态标签样式 */
+.status-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+}
+
+.status-draft { background-color: #6c757d; color: white; }
+.status-published { background-color: #28a745; color: white; }
+.status-archived { background-color: #dc3545; color: white; }
+.status-rejected { background-color: #ffc107; color: #212529; }
+
+/* 空状态样式 */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* 动画效果 */
+.fadeInUp {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .page-header {
+        padding: 1.5rem 0;
+    }
+    
+    .stats-card {
+        margin-bottom: 1rem;
+    }
+    
+    .document-card {
+        margin-bottom: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 页面头部 -->
+    <div class="page-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-2">
+                        <i class="fa fa-folder me-3"></i>{{ category.name }}
+                    </h1>
+                    <p class="mb-0 opacity-75">
+                        {% if category.parent %}
+                            子分类：{{ category.parent.name }}
+                        {% else %}
+                            父分类
+                        {% endif %}
+                        {% if subcategories %}
+                            · 包含 {{ subcategories.count }} 个子分类
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <a href="{% url 'documents:category_list' %}" class="btn btn-light">
+                        <i class="fa fa-arrow-left me-2"></i>返回分类管理
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 统计信息 -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fa fa-file-alt fa-2x"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0">{{ documents|length }}</h4>
+                            <small>总文档数</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fa fa-eye fa-2x"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0">{{ documents|length }}</h4>
+                            <small>我的文档</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fa fa-clock fa-2x"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0">{{ documents|length }}</h4>
+                            <small>最近更新</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文档列表 -->
+        <div class="row">
+            {% if documents %}
+                {% for document in documents %}
+                <div class="col-lg-6 col-xl-4 mb-4 fadeInUp">
+                    <div class="document-card">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-start mb-3">
+                                <div class="file-icon {{ document.file_type|lower }}">
+                                    <i class="fa fa-file-{{ document.file_type|lower }}"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1 fw-bold text-dark">{{ document.title }}</h6>
+                                    <p class="text-muted small mb-2">{{ document.description|truncatechars:60 }}</p>
+                                    <div class="d-flex align-items-center">
+                                        <span class="status-badge status-{{ document.status|lower }}">
+                                            {{ document.get_status_display }}
+                                        </span>
+                                        {% if document.is_public %}
+                                            <span class="badge bg-info ms-2">公开</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="text-muted small">
+                                    <i class="fa fa-calendar me-1"></i>
+                                    {{ document.created_at|date:"Y-m-d" }}
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <a href="{% url 'documents:document_detail' document.pk %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fa fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'documents:download_document' document.pk %}" class="btn btn-sm btn-outline-success">
+                                        <i class="fa fa-download"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12">
+                    <div class="empty-state">
+                        <i class="fa fa-folder-open"></i>
+                        <h4>暂无文档</h4>
+                        <p>该分类下还没有文档，<a href="{% url 'documents:upload_document' %}">立即上传</a>第一个文档吧！</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- 分页 -->
+        {% if is_paginated %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <nav aria-label="文档分页">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">&laquo; 首页</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">上一页</a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                第 {{ page_obj.number }} 页，共 {{ page_obj.paginator.num_pages }} 页
+                            </span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">下一页</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">末页 &raquo;</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}系统配置 - 教师文档管理系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fa fa-cog"></i> 系统配置
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="max_file_size" class="form-label">
+                                        <i class="fa fa-file"></i> 最大文件大小 (MB)
+                                    </label>
+                                    <input type="number" class="form-control" id="max_file_size" name="max_file_size" 
+                                           value="{{ form_data.max_file_size|default:'5120' }}" min="1" max="10240">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="default_storage_quota" class="form-label">
+                                        <i class="fa fa-hdd-o"></i> 默认存储配额 (GB)
+                                    </label>
+                                    <input type="number" class="form-control" id="default_storage_quota" name="default_storage_quota" 
+                                           value="{{ form_data.default_storage_quota|default:'10' }}" min="1" max="1000">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="password_expiry_days" class="form-label">
+                                        <i class="fa fa-calendar"></i> 密码过期天数
+                                    </label>
+                                    <input type="number" class="form-control" id="password_expiry_days" name="password_expiry_days" 
+                                           value="{{ form_data.password_expiry_days|default:'90' }}" min="1" max="365">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="share_link_expiry_days" class="form-label">
+                                        <i class="fa fa-link"></i> 分享链接过期天数
+                                    </label>
+                                    <input type="number" class="form-control" id="share_link_expiry_days" name="share_link_expiry_days" 
+                                           value="{{ form_data.share_link_expiry_days|default:'7' }}" min="1" max="30">
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <div class="mb-3">
+                            <label for="allowed_file_types" class="form-label">
+                                <i class="fa fa-file-text"></i> 允许的文件类型
+                            </label>
+                            <input type="text" class="form-control" id="allowed_file_types" name="allowed_file_types" 
+                                   value="{{ form_data.allowed_file_types|default:'pdf,doc,docx,ppt,pptx,xls,xlsx,txt,md,zip,rar,7z,jpg,jpeg,png,gif' }}">
+                            <div class="form-text">请输入允许的文件扩展名，用逗号分隔，如：pdf,doc,docx,ppt,pptx</div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'system:dashboard' %}" class="btn btn-secondary me-md-2">
+                                <i class="fa fa-arrow-left"></i> 返回仪表盘
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa fa-save"></i> 保存配置
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

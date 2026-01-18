@@ -1,0 +1,192 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}删除分类 - 教师文档管理系统{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 页面整体样式 */
+.page-header {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    border-radius: 0 0 20px 20px;
+    box-shadow: 0 4px 20px rgba(220, 53, 69, 0.3);
+}
+
+/* 警告卡片样式 */
+.warning-card {
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border: none;
+    overflow: hidden;
+    background: white;
+}
+
+.warning-card .card-header {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    border: none;
+    padding: 1.5rem 2rem;
+}
+
+/* 分类信息卡片 */
+.category-info {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px;
+    padding: 1.5rem;
+    border-left: 5px solid #dc3545;
+}
+
+.category-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: white;
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+}
+
+/* 按钮样式 */
+.btn-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    border: none;
+    border-radius: 25px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(220, 53, 69, 0.6);
+}
+
+.btn-secondary {
+    border-radius: 25px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    transform: translateY(-2px);
+}
+
+/* 动画效果 */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.warning-card {
+    animation: fadeInUp 0.6s ease forwards;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 页面标题 -->
+    <div class="page-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-2">
+                        <i class="fa fa-exclamation-triangle me-3"></i> 确认删除分类
+                    </h1>
+                    <p class="mb-0 opacity-75">请仔细确认删除操作，此操作不可撤销</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card warning-card">
+                    <div class="card-header">
+                        <h4 class="mb-0">
+                            <i class="fa fa-exclamation-triangle me-2"></i> 确认删除分类
+                        </h4>
+                    </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fa fa-warning"></i>
+                        <strong>警告：</strong>删除分类后，该分类下的所有文档将变为未分类状态。此操作不可撤销！
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5 class="mb-3">分类信息</h5>
+                        <div class="category-info">
+                            <div class="d-flex align-items-center">
+                                <div class="category-icon me-3">
+                                    <i class="fa {{ object.icon|default:'fa-folder' }}"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1 fw-bold">{{ object.name }}</h6>
+                                    <small class="text-muted">
+                                        {% if object.parent %}
+                                            <i class="fa fa-level-up me-1"></i> 子分类 - 父分类: {{ object.parent.name }}
+                                        {% else %}
+                                            <i class="fa fa-folder me-1"></i> 父分类
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if object.children.exists %}
+                    <div class="mb-4">
+                        <h6 class="text-danger">子分类 ({{ object.children.count }})</h6>
+                        <div class="alert alert-info">
+                            <i class="fa fa-info-circle"></i>
+                            此分类包含 {{ object.children.count }} 个子分类，删除后这些子分类也将被删除：
+                            <ul class="mb-0 mt-2">
+                                {% for child in object.children.all %}
+                                <li>{{ child.name }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if object.document_set.exists %}
+                    <div class="mb-4">
+                        <h6 class="text-warning">关联文档 ({{ object.document_set.count }})</h6>
+                        <div class="alert alert-warning">
+                            <i class="fa fa-file-text"></i>
+                            此分类下有 {{ object.document_set.count }} 个文档，删除后这些文档将变为未分类状态。
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'documents:category_list' %}" class="btn btn-secondary me-md-2">
+                                <i class="fa fa-arrow-left me-2"></i> 取消
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fa fa-trash me-2"></i> 确认删除
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

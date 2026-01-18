@@ -1,0 +1,136 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}分享链接已失效 - 教师文档管理系统{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow">
+                <div class="card-body text-center p-5">
+                    <!-- 图标 -->
+                    <div class="mb-4">
+                        <i class="fa fa-exclamation-triangle text-warning" style="font-size: 4rem;"></i>
+                    </div>
+                    
+                    <!-- 标题 -->
+                    <h2 class="text-danger mb-3">分享链接已失效</h2>
+                    
+                    <!-- 描述 -->
+                    <p class="text-muted mb-4">
+                        抱歉，您访问的分享链接已经失效。可能的原因包括：
+                    </p>
+                    
+                    <!-- 原因列表 -->
+                    <div class="text-start mb-4">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fa fa-clock-o text-muted me-2"></i>
+                                链接已过期
+                            </li>
+                            <li class="mb-2">
+                                <i class="fa fa-ban text-muted me-2"></i>
+                                链接已被禁用
+                            </li>
+                            <li class="mb-2">
+                                <i class="fa fa-trash text-muted me-2"></i>
+                                链接已被删除
+                            </li>
+                            <li class="mb-2">
+                                <i class="fa fa-lock text-muted me-2"></i>
+                                文档访问权限已更改
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- 建议操作 -->
+                    <div class="alert alert-info">
+                        <i class="fa fa-info-circle me-2"></i>
+                        如果您需要访问此文档，请联系文档所有者获取新的分享链接。
+                    </div>
+                    
+                    <!-- 操作按钮 -->
+                    <div class="mt-4">
+                        <a href="{% url 'users:login' %}" class="btn btn-primary me-2">
+                            <i class="fa fa-sign-in"></i> 登录系统
+                        </a>
+                        <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                            <i class="fa fa-arrow-left"></i> 返回上页
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border: none;
+    border-radius: 15px;
+}
+
+.card-body {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+}
+
+.text-warning {
+    color: #ffc107 !important;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+    border-radius: 10px;
+}
+
+.btn {
+    border-radius: 25px;
+    padding: 10px 20px;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(45deg, #0056b3, #004085);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
+.btn-outline-secondary {
+    border: 2px solid #6c757d;
+    color: #6c757d;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+}
+
+.list-unstyled li {
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.list-unstyled li:last-child {
+    border-bottom: none;
+}
+
+.fa {
+    width: 20px;
+    text-align: center;
+}
+</style>
+{% endblock %}

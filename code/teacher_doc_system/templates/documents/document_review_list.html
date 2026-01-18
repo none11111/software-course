@@ -1,0 +1,174 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}待审核文档 - 教师文档管理系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="fa fa-clipboard-check text-warning me-2"></i>待审核文档
+                </h2>
+                <div>
+                    <a href="{% url 'documents:document_list' %}" class="btn btn-outline-secondary">
+                        <i class="fa fa-arrow-left me-1"></i>返回文档列表
+                    </a>
+                </div>
+            </div>
+
+            {% if documents %}
+                <div class="card">
+                    <div class="card-header">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h5 class="mb-0">
+                                    <i class="fa fa-list me-2"></i>待审核文档列表
+                                    <span class="badge bg-warning ms-2">{{ documents|length }} 个</span>
+                                </h5>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <small class="text-muted">
+                                    按提交时间排序
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="5%">#</th>
+                                        <th width="30%">文档信息</th>
+                                        <th width="15%">提交者</th>
+                                        <th width="15%">提交时间</th>
+                                        <th width="10%">文件大小</th>
+                                        <th width="15%">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for document in documents %}
+                                    <tr>
+                                        <td class="text-muted">{{ forloop.counter }}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-{{ document.file_type|default:'file' }} me-2 text-primary"></i>
+                                                <div>
+                                                    <strong>{{ document.title }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        {{ document.description|truncatechars:50|default:"无描述" }}
+                                                    </small>
+                                                    <br>
+                                                    <span class="badge bg-warning">待审核</span>
+                                                    {% if document.is_public %}
+                                                        <span class="badge bg-success ms-1">公开</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary ms-1">私有</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-user-circle me-2 text-info"></i>
+                                                <div>
+                                                    <strong>{{ document.author.get_full_name|default:document.author.username }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">{{ document.author.department|default:"未设置部门" }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="text-muted">{{ document.created_at|date:"Y-m-d H:i" }}</span>
+                                            <br>
+                                            <small class="text-muted">{{ document.created_at|timesince }}前</small>
+                                        </td>
+                                        <td>
+                                            <span class="text-muted">{{ document.file_size|filesizeformat }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'documents:document_review' document.pk %}" 
+                                                   class="btn btn-sm btn-primary" title="审核文档">
+                                                    <i class="fa fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'documents:preview_document' document.pk %}" 
+                                                   class="btn btn-sm btn-info" title="预览文档" target="_blank">
+                                                    <i class="fa fa-search"></i>
+                                                </a>
+                                                <a href="{% url 'documents:download_document' document.pk %}" 
+                                                   class="btn btn-sm btn-secondary" title="下载文档">
+                                                    <i class="fa fa-download"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 分页 -->
+                {% if is_paginated %}
+                <nav aria-label="文档分页" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">
+                                    <i class="fa fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                    <i class="fa fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                    <i class="fa fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                                    <i class="fa fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fa fa-clipboard-check fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">暂无待审核文档</h4>
+                    <p class="text-muted">当前没有需要审核的文档</p>
+                    <a href="{% url 'documents:document_list' %}" class="btn btn-primary">
+                        <i class="fa fa-arrow-left me-1"></i>返回文档列表
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

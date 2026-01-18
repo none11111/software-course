@@ -1,0 +1,680 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}分类管理 - 教师文档管理系统{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 页面整体样式 */
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    border-radius: 0 0 20px 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+
+/* 分类卡片样式 */
+.category-card {
+    transition: all 0.3s ease;
+    border: none;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    background: white;
+    position: relative;
+    z-index: 1;
+}
+
+.category-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    z-index: 2;
+}
+
+.category-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+}
+
+/* 分类图标样式 */
+.category-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+.category-icon:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+
+/* 子分类样式 */
+.child-category {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    padding: 0.8rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #007bff;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 2; /* 保持适中的z-index */
+}
+
+.child-category:hover {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    transform: translateX(5px);
+}
+
+/* 分类按钮样式 */
+.category-card .btn,
+.child-category .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    border-width: 1px;
+}
+
+.category-card .btn:hover,
+.child-category .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 子分类按钮特殊样式 */
+.child-category .btn {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
+}
+
+
+/* 展开/收起按钮样式 */
+.toggle-children {
+    border-radius: 20px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    pointer-events: auto;
+    z-index: 1; /* 降低z-index，避免遮挡下拉菜单 */
+}
+
+.toggle-children:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.toggle-children.btn-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+}
+
+.toggle-children.btn-outline-primary {
+    border: 2px solid #007bff;
+    color: #007bff;
+    background: transparent;
+}
+
+.toggle-children.btn-outline-primary:hover {
+    background: #007bff;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+/* 子分类容器动画 */
+.children-container {
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 5; /* 降低z-index，避免遮挡下拉菜单 */
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+}
+
+.children-container.show {
+    animation: slideDown 0.3s ease forwards;
+}
+
+/* 子分类行样式 */
+.children-container .row {
+    position: relative;
+    z-index: 5;
+}
+
+.children-container .col-12 {
+    position: relative;
+    z-index: 3;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        max-height: 500px;
+        transform: translateY(0);
+    }
+}
+
+/* 按钮样式 */
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 25px;
+    padding: 0.6rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+}
+
+.btn-outline-secondary {
+    border-radius: 20px;
+    border: 2px solid #6c757d;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-secondary:hover {
+    background: #6c757d;
+    transform: translateY(-2px);
+}
+
+/* 状态徽章 */
+.badge {
+    border-radius: 20px;
+    padding: 0.4rem 0.8rem;
+    font-weight: 500;
+}
+
+/* 空状态样式 */
+.empty-state {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 20px;
+    padding: 3rem;
+    text-align: center;
+    border: 2px dashed #dee2e6;
+}
+
+.empty-state i {
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+/* 动画效果 */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.category-card {
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+.category-card:nth-child(1) { animation-delay: 0.1s; }
+.category-card:nth-child(2) { animation-delay: 0.2s; }
+.category-card:nth-child(3) { animation-delay: 0.3s; }
+.category-card:nth-child(4) { animation-delay: 0.4s; }
+.category-card:nth-child(5) { animation-delay: 0.5s; }
+.category-card:nth-child(6) { animation-delay: 0.6s; }
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .page-header {
+        padding: 1.5rem 0;
+        margin-bottom: 1.5rem;
+    }
+    
+    
+    .category-card {
+        margin-bottom: 1rem;
+    }
+}
+
+/* 加载动画 */
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 页面标题 -->
+    <div class="page-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-2">
+                        <i class="fa fa-tags me-3"></i> 分类管理
+                    </h1>
+                    <p class="mb-0 opacity-75">管理您的文档分类，让文档更有条理</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <a href="{% url 'documents:create_category' %}" class="btn btn-light btn-lg">
+                        <i class="fa fa-plus me-2"></i> 新建分类
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+        <!-- 管理员分类 -->
+        {% if admin_parent_categories %}
+        <div class="mb-5">
+            <div class="d-flex align-items-center mb-4">
+                <div class="me-3">
+                    <i class="fa fa-shield-alt fa-2x text-primary"></i>
+                </div>
+                <div>
+                    <h3 class="mb-1 fw-bold">管理员分类</h3>
+                    <p class="text-muted mb-0">系统管理员创建的分类，所有用户都可以使用</p>
+                </div>
+            </div>
+            <div class="row">
+                {% for category in admin_parent_categories %}
+            <div class="col-lg-4 col-md-6 mb-5">
+                <div class="category-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="category-icon me-3" style="background: linear-gradient(135deg, {% cycle '#667eea' '#764ba2' '#f093fb' '#f5576c' '#4facfe' '#00f2fe' '#43e97b' '#38f9d7' %} 0%, {% cycle '#764ba2' '#f093fb' '#f5576c' '#4facfe' '#00f2fe' '#43e97b' '#38f9d7' '#667eea' %} 100%);">
+                                <i class="fa {{ category.icon|default:'fa-folder' }}"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5 class="mb-1 fw-bold text-dark">
+                                    <a href="{% url 'documents:category_documents' category.pk %}" class="text-decoration-none text-dark">
+                                        {{ category.name }}
+                                    </a>
+                                </h5>
+                                <span class="badge bg-primary">
+                                    <i class="fa fa-folder me-1"></i> 父分类
+                                </span>
+                            </div>
+                            <div class="d-flex gap-2">
+                                {% if user.is_superuser or category.created_by == user %}
+                                <a href="{% url 'documents:edit_category' category.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fa fa-edit me-1"></i> 编辑
+                                </a>
+                                <a href="{% url 'documents:delete_category' category.pk %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定要删除这个分类吗？{% if category.children.exists %}删除后，该分类下的所有子分类将变为未分类状态。{% endif %}')">
+                                    <i class="fa fa-trash me-1"></i> 删除
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted small">状态</span>
+                                {% if category.is_active %}
+                                    <span class="badge bg-success">
+                                        <i class="fa fa-check-circle me-1"></i> 活跃
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">
+                                        <i class="fa fa-pause-circle me-1"></i> 停用
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted small">创建时间</span>
+                                <small class="text-dark">{{ category.created_at|date:"Y-m-d" }}</small>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted small">创建者</span>
+                                <div class="d-flex align-items-center">
+                                    <i class="fa fa-user-circle me-1 text-primary"></i>
+                                    <small class="text-dark">{{ category.created_by.get_full_name|default:category.created_by.username }}</small>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted small">子分类数量</span>
+                                <small class="text-dark">{{ category.children.count }} 个</small>
+                            </div>
+                        </div>
+
+                        <!-- 子分类展开/收起按钮 -->
+                        {% if category.children.exists %}
+                        <div class="border-top pt-3">
+                            <button class="btn btn-outline-primary btn-sm w-100 mb-3 toggle-children" 
+                                    data-category-id="{{ category.pk }}" 
+                                    data-count="{{ category.children.count }}"
+                                    data-expanded="false">
+                                <i class="fa fa-chevron-down me-2"></i> 
+                                显示子分类 ({{ category.children.count }})
+                            </button>
+                            
+                            <!-- 子分类列表（默认隐藏） -->
+                            <div class="children-container" id="children-{{ category.pk }}" style="display: none;">
+                                <div class="row">
+                                    {% for child in category.children.all %}
+                                    <div class="col-12 mb-2">
+                                        <div class="child-category">
+                                            <div class="d-flex align-items-center">
+                                                <div class="category-icon me-3" style="width: 30px; height: 30px; font-size: 14px; background: linear-gradient(135deg, #6c757d, #495057);">
+                                                    <i class="fa {{ child.icon|default:'fa-folder' }}"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <small class="fw-bold text-dark">
+                                                        <a href="{% url 'documents:category_documents' child.pk %}" class="text-decoration-none text-dark">
+                                                            {{ child.name }}
+                                                        </a>
+                                                    </small>
+                                                    {% if not child.is_active %}
+                                                        <span class="badge bg-secondary ms-2">停用</span>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="d-flex gap-1">
+                                                    {% if user.is_superuser or child.created_by == user %}
+                                                    <a href="{% url 'documents:edit_category' child.pk %}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fa fa-edit"></i>
+                                                    </a>
+                                                    <a href="{% url 'documents:delete_category' child.pk %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定要删除这个分类吗？')">
+                                                        <i class="fa fa-trash"></i>
+                                                    </a>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="empty-state">
+                    <i class="fa fa-tags fa-4x mb-4"></i>
+                    <h3 class="text-muted mb-3">暂无分类</h3>
+                    <p class="text-muted mb-4">还没有创建任何文档分类，开始创建您的第一个分类吧！</p>
+                    <a href="{% url 'documents:create_category' %}" class="btn btn-primary btn-lg">
+                        <i class="fa fa-plus me-2"></i> 创建第一个分类
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 我的分类 -->
+        {% if user_parent_categories %}
+        <div class="mb-5">
+            <div class="d-flex align-items-center mb-4">
+                <div class="me-3">
+                    <i class="fa fa-user fa-2x text-success"></i>
+                </div>
+                <div>
+                    <h3 class="mb-1 fw-bold">教师自行创建分类</h3>
+                    <p class="text-muted mb-0">您自己创建的分类，只有您可以管理</p>
+                </div>
+            </div>
+            <div class="row">
+                {% for category in user_parent_categories %}
+            <div class="col-lg-4 col-md-6 mb-5">
+                <div class="category-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="category-icon me-3" style="background: linear-gradient(135deg, {% cycle '#667eea' '#764ba2' '#f093fb' '#f5576c' '#4facfe' '#00f2fe' '#43e97b' '#38f9d7' %} 0%, {% cycle '#764ba2' '#f093fb' '#f5576c' '#4facfe' '#00f2fe' '#43e97b' '#38f9d7' '#667eea' %} 100%);">
+                                <i class="fa {{ category.icon|default:'fa-folder' }}"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5 class="mb-1 fw-bold text-dark">
+                                    <a href="{% url 'documents:category_documents' category.pk %}" class="text-decoration-none text-dark">
+                                        {{ category.name }}
+                                    </a>
+                                </h5>
+                                <span class="badge bg-success">
+                                    <i class="fa fa-user me-1"></i> 我的分类
+                                </span>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'documents:edit_category' category.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fa fa-edit me-1"></i> 编辑
+                                </a>
+                                <a href="{% url 'documents:delete_category' category.pk %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定要删除这个分类吗？{% if category.children.exists %}删除后，该分类下的所有子分类将变为未分类状态。{% endif %}')">
+                                    <i class="fa fa-trash me-1"></i> 删除
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted small">状态</span>
+                                {% if category.is_active %}
+                                    <span class="badge bg-success">
+                                        <i class="fa fa-check-circle me-1"></i> 活跃
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">
+                                        <i class="fa fa-pause-circle me-1"></i> 停用
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted small">创建时间</span>
+                                <small class="text-dark">{{ category.created_at|date:"Y-m-d" }}</small>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted small">创建者</span>
+                                <div class="d-flex align-items-center">
+                                    <i class="fa fa-user-circle me-1 text-primary"></i>
+                                    <small class="text-dark">{{ category.created_by.get_full_name|default:category.created_by.username }}</small>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted small">子分类数量</span>
+                                <small class="text-dark">{{ category.children.count }} 个</small>
+                            </div>
+                        </div>
+
+                        <!-- 子分类展开/收起按钮 -->
+                        {% if category.children.exists %}
+                        <div class="border-top pt-3">
+                            <button class="btn btn-outline-primary btn-sm w-100 mb-3 toggle-children" 
+                                    data-category-id="{{ category.pk }}" 
+                                    data-count="{{ category.children.count }}"
+                                    data-expanded="false">
+                                <i class="fa fa-chevron-down me-2"></i> 
+                                显示子分类 ({{ category.children.count }})
+                            </button>
+                            
+                            <!-- 子分类列表（默认隐藏） -->
+                            <div class="children-container" id="children-{{ category.pk }}" style="display: none;">
+                                <div class="row">
+                                    {% for child in category.children.all %}
+                                    <div class="col-12 mb-2">
+                                        <div class="child-category">
+                                            <div class="d-flex align-items-center">
+                                                <div class="category-icon me-3" style="width: 30px; height: 30px; font-size: 14px; background: linear-gradient(135deg, #6c757d, #495057);">
+                                                    <i class="fa {{ child.icon|default:'fa-folder' }}"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <small class="fw-bold text-dark">
+                                                        <a href="{% url 'documents:category_documents' child.pk %}" class="text-decoration-none text-dark">
+                                                            {{ child.name }}
+                                                        </a>
+                                                    </small>
+                                                    {% if not child.is_active %}
+                                                        <span class="badge bg-secondary ms-2">停用</span>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="d-flex gap-1">
+                                                    <a href="{% url 'documents:edit_category' child.pk %}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fa fa-edit"></i>
+                                                    </a>
+                                                    <a href="{% url 'documents:delete_category' child.pk %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定要删除这个分类吗？')">
+                                                        <i class="fa fa-trash"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 空状态 -->
+        {% if not admin_parent_categories and not user_parent_categories %}
+        <div class="row">
+            <div class="col-12">
+                <div class="empty-state">
+                    <i class="fa fa-tags fa-4x mb-4"></i>
+                    <h3 class="text-muted mb-3">暂无分类</h3>
+                    <p class="text-muted mb-4">还没有创建任何文档分类，开始创建您的第一个分类吧！</p>
+                    <a href="{% url 'documents:create_category' %}" class="btn btn-primary btn-lg">
+                        <i class="fa fa-plus me-2"></i> 创建第一个分类
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 添加页面加载动画
+    const cards = document.querySelectorAll('.category-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(30px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.6s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+    
+    
+    // 子分类展开/收起功能
+    const toggleButtons = document.querySelectorAll('.toggle-children');
+    
+    toggleButtons.forEach((button, index) => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const categoryId = this.getAttribute('data-category-id');
+            const childrenContainer = document.getElementById('children-' + categoryId);
+            const isExpanded = this.getAttribute('data-expanded') === 'true';
+            
+            if (!childrenContainer) {
+                return;
+            }
+            
+            if (isExpanded) {
+                // 收起子分类
+                childrenContainer.style.maxHeight = '0';
+                childrenContainer.style.opacity = '0';
+                childrenContainer.style.overflow = 'hidden';
+                
+                setTimeout(() => {
+                    childrenContainer.style.display = 'none';
+                }, 300);
+                
+                this.innerHTML = '<i class="fa fa-chevron-down me-2"></i> 显示子分类 (' + this.getAttribute('data-count') + ')';
+                this.setAttribute('data-expanded', 'false');
+                this.classList.remove('btn-primary');
+                this.classList.add('btn-outline-primary');
+            } else {
+                // 展开子分类
+                childrenContainer.style.display = 'block';
+                childrenContainer.style.maxHeight = '0';
+                childrenContainer.style.opacity = '0';
+                childrenContainer.style.overflow = 'hidden';
+                
+                // 强制重排以触发动画
+                childrenContainer.offsetHeight;
+                
+                childrenContainer.style.maxHeight = '500px';
+                childrenContainer.style.opacity = '1';
+                
+                this.innerHTML = '<i class="fa fa-chevron-up me-2"></i> 收起子分类 (' + this.getAttribute('data-count') + ')';
+                this.setAttribute('data-expanded', 'true');
+                this.classList.remove('btn-outline-primary');
+                this.classList.add('btn-primary');
+                
+                // 添加子分类展开动画
+                const childCategories = childrenContainer.querySelectorAll('.child-category');
+                childCategories.forEach((child, index) => {
+                    child.style.opacity = '0';
+                    child.style.transform = 'translateY(10px)';
+                    setTimeout(() => {
+                        child.style.transition = 'all 0.3s ease';
+                        child.style.opacity = '1';
+                        child.style.transform = 'translateY(0)';
+                    }, 200 + index * 50);
+                });
+            }
+        });
+    });
+    
+    // 子分类悬停效果
+    const childCategories = document.querySelectorAll('.child-category');
+    childCategories.forEach(child => {
+        child.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateX(8px)';
+        });
+        child.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateX(0)';
+        });
+    });
+});
+</script>
+{% endblock %}

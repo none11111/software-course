@@ -1,0 +1,313 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}分享链接管理 - 教师文档管理系统{% endblock %}
+
+{% block extra_css %}
+<style>
+.share-link-card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.share-link-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-color: #007bff;
+}
+
+.status-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.status-active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-expired {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.status-inactive {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+
+.link-url {
+    font-family: 'Courier New', monospace;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 0.5rem;
+    word-break: break-all;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex: 1;
+    font-size: 0.85rem;
+}
+
+.expiry-warning {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fa fa-share-alt"></i> 分享链接管理
+                </h2>
+                <a href="{% url 'documents:document_list' %}" class="btn btn-outline-secondary">
+                    <i class="fa fa-arrow-left"></i> 返回文档列表
+                </a>
+            </div>
+
+
+            {% if share_links %}
+                <div class="row">
+                    {% for share_link in share_links %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card share-link-card h-100">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">
+                                        <i class="fa fa-link"></i> 分享链接
+                                    </h6>
+                                    <span class="status-badge 
+                                        {% if not share_link.is_active %}
+                                            status-inactive
+                                        {% elif share_link.expires_at <= now %}
+                                            status-expired
+                                        {% else %}
+                                            status-active
+                                        {% endif %}">
+                                        {% if not share_link.is_active %}
+                                            已禁用
+                                        {% elif share_link.expires_at <= now %}
+                                            已过期
+                                        {% else %}
+                                            有效
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="card-body">
+                                    <!-- 关联文档信息 -->
+                                    {% if share_link.document %}
+                                        <div class="mb-3">
+                                            <h6 class="text-muted mb-1">关联文档</h6>
+                                            <p class="mb-0">
+                                                <i class="fa fa-file-o"></i> 
+                                                <strong>{{ share_link.document.title }}</strong>
+                                            </p>
+                                            <small class="text-muted">
+                                                作者：{{ share_link.document.author.get_full_name|default:share_link.document.author.username }}
+                                            </small>
+                                        </div>
+                                    {% else %}
+                                        <div class="mb-3">
+                                            <h6 class="text-muted mb-1">关联文档</h6>
+                                            <p class="mb-0 text-muted">
+                                                <i class="fa fa-exclamation-triangle"></i> 文档已删除
+                                            </p>
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- 分享链接 -->
+                                    <div class="mb-3">
+                                        <h6 class="text-muted mb-1">分享链接</h6>
+                                        <div class="input-group">
+                                            <input type="text" 
+                                                   class="form-control link-url" 
+                                                   value="{{ request.scheme }}://{{ request.get_host }}{% url 'documents:share_link' share_link.token %}" 
+                                                   readonly
+                                                   style="font-size: 0.85rem; word-break: break-all;">
+                                        </div>
+                                        <small class="text-muted">请手动选择并复制链接</small>
+                                    </div>
+
+                                    <!-- 链接详情 -->
+                                    <div class="row text-center">
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">创建时间</small>
+                                            <small class="fw-bold">{{ share_link.created_at|date:"Y-m-d H:i" }}</small>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">过期时间</small>
+                                            <small class="fw-bold">{{ share_link.expires_at|date:"Y-m-d H:i" }}</small>
+                                        </div>
+                                    </div>
+
+                                    <!-- 下载统计 -->
+                                    <div class="row text-center mt-2">
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">下载次数</small>
+                                            <small class="fw-bold">{{ share_link.download_count }}</small>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">最大下载</small>
+                                            <small class="fw-bold">
+                                                {% if share_link.max_downloads == 0 %}
+                                                    无限制
+                                                {% else %}
+                                                    {{ share_link.max_downloads }}
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                    </div>
+
+                                    <!-- 密码保护 -->
+                                    {% if share_link.password %}
+                                        <div class="mt-2">
+                                            <small class="text-muted">
+                                                <i class="fa fa-lock"></i> 密码保护
+                                            </small>
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- 过期警告 -->
+                                    {% if share_link.is_active and share_link.expires_at > now %}
+                                        {% now "Y-m-d H:i:s" as current_time %}
+                                        {% if share_link.expires_at|timeuntil|slice:":1" == "0" %}
+                                            <div class="expiry-warning">
+                                                <small>
+                                                    <i class="fa fa-exclamation-triangle"></i> 
+                                                    链接即将过期
+                                                </small>
+                                            </div>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                                <div class="card-footer">
+                                    <div class="btn-group w-100" role="group">
+                                        {% if share_link.is_active %}
+                                            <form method="post" action="{% url 'documents:disable_share_link' share_link.id %}" style="display: inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" 
+                                                        class="btn btn-outline-warning btn-sm"
+                                                        onclick="return confirm('确定要禁用此分享链接吗？')">
+                                                    <i class="fa fa-ban"></i> 禁用
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <form method="post" action="{% url 'documents:enable_share_link' share_link.id %}" style="display: inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-outline-success btn-sm">
+                                                    <i class="fa fa-check"></i> 启用
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                        <a href="{% url 'documents:delete_share_link' share_link.id %}" 
+                                           class="btn btn-outline-danger btn-sm"
+                                           onclick="return confirm('确定要删除此分享链接吗？')">
+                                            <i class="fa fa-trash"></i> 删除
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- 分页 -->
+                {% if is_paginated %}
+                    <nav aria-label="分享链接分页">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1">
+                                        <i class="fa fa-angle-double-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                        <i class="fa fa-angle-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                        <i class="fa fa-angle-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                                        <i class="fa fa-angle-double-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <!-- 空状态 -->
+                <div class="empty-state">
+                    <i class="fa fa-share-alt"></i>
+                    <h4>暂无分享链接</h4>
+                    <p>您还没有创建任何分享链接。</p>
+                    <a href="{% url 'documents:document_list' %}" class="btn btn-primary">
+                        <i class="fa fa-plus"></i> 去创建分享链接
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+
+// 页面加载完成后的初始化
+document.addEventListener('DOMContentLoaded', function() {
+    // 检查是否有分享链接即将过期
+    const expiryWarnings = document.querySelectorAll('.expiry-warning');
+    expiryWarnings.forEach(function(warning) {
+        warning.style.animation = 'pulse 2s infinite';
+    });
+});
+</script>
+
+<style>
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+</style>
+{% endblock %}
